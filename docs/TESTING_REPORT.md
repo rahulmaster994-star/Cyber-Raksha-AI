@@ -45,3 +45,4 @@
 - **Android Emulator / Unit Tests:** 100% verified.
 - **Physical Device SMS Auto-Interception:** As verified during code audit, the app operates in **Manual SMS Analysis Mode** (`SmsAccessMode.MANUAL_ONLY`), where users paste SMS messages. Automatic background SMS interception is not implemented in the current release.
 - **Physical Device Call Screening:** Requires real SIM card and manual selection as "Default Caller ID & Spam App" in Android OS settings. Code foundation verified; physical hardware verification is marked as pending.
+

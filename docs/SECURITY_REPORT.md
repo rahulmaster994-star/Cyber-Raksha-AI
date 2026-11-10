@@ -66,3 +66,4 @@ A comprehensive scan of the repository confirms:
 - Zero committed production passwords or hardcoded API tokens.
 - Secret pepper and admin keys configured via environment variables with length validation ($\ge 32$ chars).
 - Clean `.env.example` with generic placeholders.
+

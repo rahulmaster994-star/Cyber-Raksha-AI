@@ -60,3 +60,4 @@ All notable changes to the Cyber Raksha AI project are documented in this file.
 - Chrome Manifest V3 extension with Declarative Net Request (DNR) blocking.
 - Threat intelligence synchronization with URLhaus API.
 - Security notification and alert engine with SSE real-time streaming.
+
