@@ -1,9 +1,10 @@
 # Cyber Raksha AI — Final Production Release Report
 
 **Release Tag:** `v1.0.0-production`  
-**Commit Hash:** `eb408bc`  
+**Commit Hash:** `b7dad5d`  
+**GitHub Repository:** [https://github.com/rahulmaster994-star/Cyber-Raksha-AI](https://github.com/rahulmaster994-star/Cyber-Raksha-AI) (Private)  
 **Release Date:** 2026-11-10  
-**Status:** **READY FOR GITHUB PUBLICATION & CLOUD PROVISIONING**  
+**Status:** **PUBLISHED TO GITHUB & READY FOR CLOUD PROVISIONING**  
 
 ---
 
@@ -77,3 +78,4 @@ The Cyber Raksha AI ecosystem has completed comprehensive verification across al
 1. **Android SMS Mode:** Manual analysis mode (`SmsAccessMode.MANUAL_ONLY`); users paste SMS text. No background SMS interception receiver is registered.
 2. **CPU Inference:** Latency is ~133 ms on Windows 11 hardware.
 3. **URL Shorteners:** Flagged as `SUSPICIOUS_SHORTENER` without automatic headless redirect expansion to prevent SSRF vulnerabilities.
+

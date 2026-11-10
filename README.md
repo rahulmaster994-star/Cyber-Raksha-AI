@@ -2,6 +2,7 @@
 > **AI-Powered Proactive Digital Fraud Detection & Prevention Ecosystem**  
 > *Native Android Protection • Chrome MV3 Shield • Intelligent Risk Evaluation • Real-Time Alert Engine*
 
+[![GitHub Repo](https://img.shields.io/badge/GitHub-Cyber--Raksha--AI-181717?logo=github)](https://github.com/rahulmaster994-star/Cyber-Raksha-AI)
 [![Backend Tests](https://img.shields.io/badge/pytest-371%20passed%20(100%25)-brightgreen)](backend/tests/)
 [![E2E Scenarios](https://img.shields.io/badge/E2E%20Scenarios-16%2F16%20verified-success)](docs/TESTING_REPORT.md)
 [![Browser Tests](https://img.shields.io/badge/Chrome%20Extension-27%20passed-blue)](browser_extension/tests/)
