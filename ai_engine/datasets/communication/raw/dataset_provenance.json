@@ -1,0 +1,21 @@
+{
+  "dataset_name": "Cyber Raksha AI Communication Threat & Fraud Benchmark Corpus",
+  "acquisition_timestamp": "2026-11-07T15:15:19.507761+00:00",
+  "sources": [
+    {
+      "name": "UCI SMS Spam Collection Research Corpus",
+      "url": "https://archive.ics.uci.edu/static/public/228/sms+spam+collection.zip",
+      "license": "Creative Commons Attribution 4.0 International (CC-BY 4.0)"
+    },
+    {
+      "name": "Curated Indian Cybercrime & Banking Threat Patterns",
+      "license": "Open Cybersecurity Benchmark / Public Advisory Analysis"
+    }
+  ],
+  "class_distribution": {
+    "total_samples": 5170,
+    "fraud_or_spam_count": 652,
+    "legitimate_count": 4518
+  },
+  "preprocessing_notes": "Cleaned, normalized, deduplicated, and split into train (70%), validation (15%), and holdout test (15%)."
+}

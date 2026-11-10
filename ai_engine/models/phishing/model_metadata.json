@@ -1,0 +1,170 @@
+{
+  "model_version": "v1.0.0-rf-lexical",
+  "algorithm": "RandomForest",
+  "training_timestamp": "2026-11-07T14:23:17.925939+00:00",
+  "random_state": 42,
+  "feature_count": 25,
+  "feature_names": [
+    "url_length",
+    "domain_length",
+    "dot_count",
+    "hyphen_count",
+    "underscore_count",
+    "slash_count",
+    "question_mark_count",
+    "equal_count",
+    "at_symbol_count",
+    "percent_count",
+    "special_char_count",
+    "subdomain_count",
+    "has_ip_address",
+    "is_https",
+    "suspicious_keyword_count",
+    "has_at_symbol",
+    "has_suspicious_port",
+    "path_length",
+    "query_param_count",
+    "digit_count",
+    "letter_count",
+    "digit_to_letter_ratio",
+    "tld_length",
+    "is_punycode_or_idn",
+    "consecutive_char_run"
+  ],
+  "dataset_provenance": {
+    "dataset_name": "Cyber Raksha AI Phishing Detection Benchmark Dataset",
+    "acquisition_timestamp": "2026-11-07T14:23:14.136476+00:00",
+    "sources": [
+      {
+        "name": "OpenPhish Community Feed",
+        "url": "https://openphish.com/feed.txt",
+        "license": "OpenPhish Community Feed Terms (Open Research Use)"
+      },
+      {
+        "name": "PhishTank Validated Community Database",
+        "url": "http://data.phishtank.com/data/online-valid.csv",
+        "license": "PhishTank Developer Terms & CC-BY"
+      },
+      {
+        "name": "Curated Benign Domain Corpus (Tranco / Alexa Top / Verified Web Services)",
+        "license": "Public Domain / Open Verification"
+      }
+    ],
+    "class_distribution": {
+      "phishing_count": 800,
+      "legitimate_count": 800,
+      "total_records": 1600
+    },
+    "preprocessing_notes": "Duplicates removed, invalid URLs filtered, 1:1 class balanced, stratified train/val/test partitioning."
+  },
+  "validation_comparison": {
+    "RandomForest": {
+      "accuracy": 0.9917,
+      "precision": 1.0,
+      "recall": 0.9833,
+      "f1_score": 0.9916,
+      "false_positive_rate": 0.0,
+      "false_negative_rate": 0.0167,
+      "roc_auc": 0.9987,
+      "confusion_matrix": {
+        "true_negatives": 121,
+        "false_positives": 0,
+        "false_negatives": 2,
+        "true_positives": 118
+      },
+      "support": {
+        "total_samples": 241,
+        "phishing_samples": 120,
+        "legitimate_samples": 121
+      },
+      "training_time_sec": 0.718
+    },
+    "GradientBoosting": {
+      "accuracy": 0.9917,
+      "precision": 1.0,
+      "recall": 0.9833,
+      "f1_score": 0.9916,
+      "false_positive_rate": 0.0,
+      "false_negative_rate": 0.0167,
+      "roc_auc": 0.9989,
+      "confusion_matrix": {
+        "true_negatives": 121,
+        "false_positives": 0,
+        "false_negatives": 2,
+        "true_positives": 118
+      },
+      "support": {
+        "total_samples": 241,
+        "phishing_samples": 120,
+        "legitimate_samples": 121
+      },
+      "training_time_sec": 0.959
+    },
+    "DecisionTree": {
+      "accuracy": 0.9751,
+      "precision": 1.0,
+      "recall": 0.95,
+      "f1_score": 0.9744,
+      "false_positive_rate": 0.0,
+      "false_negative_rate": 0.05,
+      "roc_auc": 0.9895,
+      "confusion_matrix": {
+        "true_negatives": 121,
+        "false_positives": 0,
+        "false_negatives": 6,
+        "true_positives": 114
+      },
+      "support": {
+        "total_samples": 241,
+        "phishing_samples": 120,
+        "legitimate_samples": 121
+      },
+      "training_time_sec": 0.011
+    },
+    "LogisticRegression": {
+      "accuracy": 0.9876,
+      "precision": 1.0,
+      "recall": 0.975,
+      "f1_score": 0.9873,
+      "false_positive_rate": 0.0,
+      "false_negative_rate": 0.025,
+      "roc_auc": 0.9908,
+      "confusion_matrix": {
+        "true_negatives": 121,
+        "false_positives": 0,
+        "false_negatives": 3,
+        "true_positives": 117
+      },
+      "support": {
+        "total_samples": 241,
+        "phishing_samples": 120,
+        "legitimate_samples": 121
+      },
+      "training_time_sec": 0.054
+    }
+  },
+  "test_metrics": {
+    "accuracy": 0.9917,
+    "precision": 1.0,
+    "recall": 0.9833,
+    "f1_score": 0.9916,
+    "false_positive_rate": 0.0,
+    "false_negative_rate": 0.0167,
+    "roc_auc": 0.9996,
+    "confusion_matrix": {
+      "true_negatives": 120,
+      "false_positives": 0,
+      "false_negatives": 2,
+      "true_positives": 118
+    },
+    "support": {
+      "total_samples": 240,
+      "phishing_samples": 120,
+      "legitimate_samples": 120
+    }
+  },
+  "artifacts": {
+    "model_file": "phishing_classifier.joblib",
+    "preprocessor_file": "url_preprocessor.joblib"
+  }
+}

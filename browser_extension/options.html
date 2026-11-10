@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Cyber Raksha AI — Extension Settings</title>
+  <style>
+    body {
+      background: #050811;
+      color: #f0f6fc;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      padding: 30px;
+      max-width: 580px;
+      margin: 0 auto;
+    }
+    h1 {
+      font-size: 20px;
+      margin-bottom: 8px;
+      color: #00f0ff;
+    }
+    p {
+      color: #8b949e;
+      font-size: 13px;
+      margin-bottom: 24px;
+    }
+    .field {
+      margin-bottom: 18px;
+    }
+    label {
+      display: block;
+      font-size: 12px;
+      font-weight: bold;
+      color: #c9d1d9;
+      margin-bottom: 6px;
+    }
+    input[type="text"] {
+      width: 100%;
+      padding: 10px;
+      border-radius: 6px;
+      background: #0d1224;
+      border: 1px solid #1e2e5c;
+      color: #fff;
+      font-family: monospace;
+      font-size: 13px;
+      box-sizing: border-box;
+    }
+    input[type="text"]:focus {
+      outline: none;
+      border-color: #00f0ff;
+    }
+    .btn-row {
+      display: flex;
+      gap: 10px;
+      margin-top: 16px;
+    }
+    button {
+      padding: 10px 18px;
+      border-radius: 6px;
+      font-size: 13px;
+      font-weight: bold;
+      cursor: pointer;
+      border: none;
+      transition: all 0.2s;
+    }
+    .btn-save {
+      background: #00f0ff;
+      color: #000;
+    }
+    .btn-save:hover {
+      background: #38bdf8;
+    }
+    .btn-test {
+      background: #111936;
+      color: #00f0ff;
+      border: 1px solid rgba(0,240,255,0.3);
+    }
+    .btn-test:hover {
+      background: #1a2550;
+    }
+    .btn-sync {
+      background: #10b981;
+      color: #000;
+    }
+    .btn-sync:hover {
+      background: #34d399;
+    }
+    .status-msg {
+      margin-top: 14px;
+      font-size: 12px;
+      min-height: 18px;
+    }
+    .section-card {
+      margin-top: 24px;
+      padding: 16px;
+      border-radius: 8px;
+      background: #0d1224;
+      border: 1px solid #1e2e5c;
+    }
+    .section-card h2 {
+      font-size: 14px;
+      color: #fff;
+      margin-bottom: 8px;
+    }
+    .telemetry-row {
+      display: flex;
+      justify-content: space-between;
+      font-size: 12px;
+      color: #8b949e;
+      padding: 4px 0;
+      border-bottom: 1px solid #151e36;
+    }
+    .telemetry-val {
+      color: #fff;
+      font-family: monospace;
+    }
+    .privacy-notice {
+      margin-top: 24px;
+      padding: 14px;
+      border-radius: 8px;
+      background: #0d1224;
+      border: 1px solid #1e2e5c;
+      font-size: 11px;
+      color: #8b949e;
+      line-height: 1.5;
+    }
+  </style>
+</head>
+<body>
+  <h1>Cyber Raksha AI — Protection Settings</h1>
+  <p>Configure extension connection, threat feed synchronization, and active blocking rules.</p>
+
+  <div class="field">
+    <label for="apiUrl">Backend API Server Endpoint URL</label>
+    <input type="text" id="apiUrl" placeholder="http://127.0.0.1:8000" />
+  </div>
+
+  <div class="btn-row">
+    <button id="btnSave" class="btn-save">Save Settings</button>
+    <button id="btnTest" class="btn-test">Test Connection</button>
+    <button id="btnSync" class="btn-sync">Force Sync Threat Feed</button>
+  </div>
+
+  <div id="statusMsg" class="status-msg"></div>
+
+  <!-- Notification Preferences (Phase A3) -->
+  <div class="section-card">
+    <h2>Security Alert Notifications (Phase A3)</h2>
+    <div style="margin-top: 10px;">
+      <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; margin-bottom: 10px;">
+        <input type="checkbox" id="notifEnabled" checked />
+        <span>Enable desktop browser security notifications</span>
+      </label>
+      <div style="margin-bottom: 10px;">
+        <label for="notifMinSeverity">Minimum Alert Severity Threshold</label>
+        <select id="notifMinSeverity" style="width: 100%; padding: 8px; border-radius: 6px; background: #0d1224; border: 1px solid #1e2e5c; color: #fff; font-size: 13px;">
+          <option value="LOW">Low (Notify on all security & sync events)</option>
+          <option value="MEDIUM">Medium+ (Suspicious URLs & sync fallbacks)</option>
+          <option value="HIGH">High+ (Confirmed phishing & severe risks)</option>
+          <option value="CRITICAL">Critical Only (Blocked malicious websites only)</option>
+        </select>
+      </div>
+      <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+        <input type="checkbox" id="notifSound" />
+        <span>Enable audio alert cue on critical blocks</span>
+      </label>
+    </div>
+  </div>
+
+  <!-- Dynamic Rules Telemetry -->
+  <div class="section-card">
+    <h2>Declarative Threat Shield Telemetry</h2>
+    <div class="telemetry-row">
+      <span>Active Dynamic Blocking Rules</span>
+      <span id="rulesCount" class="telemetry-val">Loading...</span>
+    </div>
+    <div class="telemetry-row">
+      <span>Active Session User Overrides</span>
+      <span id="overridesCount" class="telemetry-val">0</span>
+    </div>
+    <div class="telemetry-row">
+      <span>Last Threat Feed Synchronization</span>
+      <span id="lastSync" class="telemetry-val">Never</span>
+    </div>
+    <div class="telemetry-row">
+      <span>Feed Synchronization Status</span>
+      <span id="syncStatus" class="telemetry-val">IDLE</span>
+    </div>
+  </div>
+
+  <div class="privacy-notice">
+    <strong>Privacy & Security Architecture:</strong> Cyber Raksha AI uses Chromium's native Declarative Net Request engine to block confirmed malicious destinations inside your browser before requests are sent. Your full browsing history, cookies, and page contents are never transmitted to any external server.
+  </div>
+
+  <script src="options.js"></script>
+</body>
+</html>

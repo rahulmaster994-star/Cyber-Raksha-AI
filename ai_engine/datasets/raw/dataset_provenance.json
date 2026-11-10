@@ -1,0 +1,26 @@
+{
+  "dataset_name": "Cyber Raksha AI Phishing Detection Benchmark Dataset",
+  "acquisition_timestamp": "2026-11-07T14:23:14.136476+00:00",
+  "sources": [
+    {
+      "name": "OpenPhish Community Feed",
+      "url": "https://openphish.com/feed.txt",
+      "license": "OpenPhish Community Feed Terms (Open Research Use)"
+    },
+    {
+      "name": "PhishTank Validated Community Database",
+      "url": "http://data.phishtank.com/data/online-valid.csv",
+      "license": "PhishTank Developer Terms & CC-BY"
+    },
+    {
+      "name": "Curated Benign Domain Corpus (Tranco / Alexa Top / Verified Web Services)",
+      "license": "Public Domain / Open Verification"
+    }
+  ],
+  "class_distribution": {
+    "phishing_count": 800,
+    "legitimate_count": 800,
+    "total_records": 1600
+  },
+  "preprocessing_notes": "Duplicates removed, invalid URLs filtered, 1:1 class balanced, stratified train/val/test partitioning."
+}

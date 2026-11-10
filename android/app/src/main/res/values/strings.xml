@@ -1,0 +1,8 @@
+<resources>
+    <string name="app_name">Cyber Raksha AI</string>
+    <string name="onboarding_title">Cyber Raksha AI</string>
+    <string name="onboarding_subtitle">India\'s AI-powered cybersecurity shield for every citizen</string>
+    <string name="notification_channel_critical">Critical Security Alerts</string>
+    <string name="notification_channel_high">High-Risk Alerts</string>
+    <string name="notification_channel_general">Security Information</string>
+</resources>

@@ -1,0 +1,35 @@
+{
+  "short_name": "CyberRaksha",
+  "name": "Cyber Raksha AI — Mobile Security Companion",
+  "description": "Intelligent AI cybersecurity defense platform against phishing, social engineering, digital arrest scams, and synthetic voice deepfakes.",
+  "icons": [
+    {
+      "src": "/pwa-192x192.png",
+      "type": "image/png",
+      "sizes": "192x192",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/pwa-512x512.png",
+      "type": "image/png",
+      "sizes": "512x512",
+      "purpose": "any maskable"
+    }
+  ],
+  "start_url": "/",
+  "background_color": "#050811",
+  "theme_color": "#050811",
+  "display": "standalone",
+  "orientation": "portrait",
+  "categories": ["security", "utilities"],
+  "share_target": {
+    "action": "/",
+    "method": "GET",
+    "params": {
+      "title": "title",
+      "text": "text",
+      "url": "url"
+    }
+  }
+}
+

@@ -1,0 +1,148 @@
+{
+  "model_name": "voice_deepfake_detector",
+  "model_type": "RandomForestClassifier",
+  "stage": "STAGE_4",
+  "created_at": "2026-11-07T16:00:31.352649Z",
+  "dataset_info": {
+    "source": "Procedurally Generated Calibrated Proxy Speech Corpus",
+    "sample_rate_hz": 16000,
+    "total_samples": 400,
+    "human_samples": 200,
+    "synthetic_samples": 200,
+    "train_size": 320,
+    "test_size": 80,
+    "methodology_note": "Academic deepfake datasets (ASVspoof, WaveFake) require institutional registration or multi-gigabyte downloads. This model is trained on a calibrated acoustic proxy dataset simulating established TTS artifact profiles (spectral flatness, pitch regularity, formant unnaturalness, brickwall bandwidth limitation). For production deployment, fine-tuning on ASVspoof 2021 is recommended."
+  },
+  "metrics": {
+    "cv_accuracy_mean": 1.0,
+    "cv_accuracy_std": 0.0,
+    "test_accuracy": 1.0,
+    "test_precision": 1.0,
+    "test_recall": 1.0,
+    "test_f1": 1.0,
+    "test_roc_auc": 1.0,
+    "confusion_matrix": [
+      [
+        40,
+        0
+      ],
+      [
+        0,
+        40
+      ]
+    ]
+  },
+  "top_features": [
+    {
+      "feature": "mfcc_9_std",
+      "importance": 0.06
+    },
+    {
+      "feature": "spectral_flatness_std",
+      "importance": 0.05
+    },
+    {
+      "feature": "delta_mfcc_5_std",
+      "importance": 0.05
+    },
+    {
+      "feature": "rms_std",
+      "importance": 0.04
+    },
+    {
+      "feature": "mfcc_0_mean",
+      "importance": 0.04
+    },
+    {
+      "feature": "delta_mfcc_3_std",
+      "importance": 0.04
+    },
+    {
+      "feature": "delta_mfcc_10_std",
+      "importance": 0.04
+    },
+    {
+      "feature": "delta_mfcc_11_std",
+      "importance": 0.04
+    },
+    {
+      "feature": "pitch_regularity",
+      "importance": 0.04
+    },
+    {
+      "feature": "mfcc_10_std",
+      "importance": 0.04
+    }
+  ],
+  "n_features": 68,
+  "feature_names": [
+    "delta_mfcc_0_mean",
+    "delta_mfcc_0_std",
+    "delta_mfcc_10_mean",
+    "delta_mfcc_10_std",
+    "delta_mfcc_11_mean",
+    "delta_mfcc_11_std",
+    "delta_mfcc_12_mean",
+    "delta_mfcc_12_std",
+    "delta_mfcc_1_mean",
+    "delta_mfcc_1_std",
+    "delta_mfcc_2_mean",
+    "delta_mfcc_2_std",
+    "delta_mfcc_3_mean",
+    "delta_mfcc_3_std",
+    "delta_mfcc_4_mean",
+    "delta_mfcc_4_std",
+    "delta_mfcc_5_mean",
+    "delta_mfcc_5_std",
+    "delta_mfcc_6_mean",
+    "delta_mfcc_6_std",
+    "delta_mfcc_7_mean",
+    "delta_mfcc_7_std",
+    "delta_mfcc_8_mean",
+    "delta_mfcc_8_std",
+    "delta_mfcc_9_mean",
+    "delta_mfcc_9_std",
+    "f0_mean",
+    "f0_std",
+    "hnr_estimate",
+    "mfcc_0_mean",
+    "mfcc_0_std",
+    "mfcc_10_mean",
+    "mfcc_10_std",
+    "mfcc_11_mean",
+    "mfcc_11_std",
+    "mfcc_12_mean",
+    "mfcc_12_std",
+    "mfcc_1_mean",
+    "mfcc_1_std",
+    "mfcc_2_mean",
+    "mfcc_2_std",
+    "mfcc_3_mean",
+    "mfcc_3_std",
+    "mfcc_4_mean",
+    "mfcc_4_std",
+    "mfcc_5_mean",
+    "mfcc_5_std",
+    "mfcc_6_mean",
+    "mfcc_6_std",
+    "mfcc_7_mean",
+    "mfcc_7_std",
+    "mfcc_8_mean",
+    "mfcc_8_std",
+    "mfcc_9_mean",
+    "mfcc_9_std",
+    "pitch_regularity",
+    "rms_mean",
+    "rms_std",
+    "spectral_bandwidth_mean",
+    "spectral_bandwidth_std",
+    "spectral_centroid_mean",
+    "spectral_centroid_std",
+    "spectral_flatness_mean",
+    "spectral_flatness_std",
+    "spectral_rolloff_mean",
+    "spectral_rolloff_std",
+    "zcr_mean",
+    "zcr_std"
+  ]
+}
