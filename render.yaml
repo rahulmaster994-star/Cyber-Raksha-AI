@@ -1,0 +1,28 @@
+services:
+  - type: web
+    name: cyberraksha-backend
+    env: python
+    region: oregon
+    plan: free
+    branch: main
+    buildCommand: pip install -r backend/requirements.txt && python ai_engine/training/train_model.py
+    startCommand: uvicorn backend.app.main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /health
+    autoDeploy: true
+    envVars:
+      - key: APP_ENV
+        value: production
+      - key: DEBUG
+        value: "False"
+      - key: APP_NAME
+        value: "Cyber Raksha AI"
+      - key: HOST
+        value: "0.0.0.0"
+      - key: DATABASE_URL
+        value: "sqlite:///./cyber_raksha.db"
+      - key: ALLOWED_ORIGINS
+        value: "http://localhost:5173,https://cyberraksha.vercel.app"
+      - key: ADMIN_SECRET_KEY
+        generateValue: true
+      - key: CYBER_RAKSHA_SMS_PEPPER
+        generateValue: true
