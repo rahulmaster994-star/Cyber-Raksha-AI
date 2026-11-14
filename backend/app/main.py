@@ -2,6 +2,16 @@
 Cyber Raksha AI - FastAPI Main Application
 Stage 8: Final System Integration, Security Hardening & Deployment
 """
+import sys
+from pathlib import Path
+
+# Defensive path insertion ensuring both backend and root are in sys.path in all environments
+_backend_dir = Path(__file__).resolve().parent.parent
+_project_root = _backend_dir.parent
+for _p in (str(_backend_dir), str(_project_root)):
+    if _p not in sys.path:
+        sys.path.insert(0, _p)
+
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request, status
 from fastapi.middleware.cors import CORSMiddleware

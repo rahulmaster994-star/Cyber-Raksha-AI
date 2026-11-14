@@ -8,16 +8,26 @@ from sqlalchemy.orm import sessionmaker, Session
 from app.core.config import settings
 from app.database.base import Base
 
-# Configure SQLite engine with thread safety for FastAPI
+# Configure engine with thread safety for SQLite and connection pooling for PostgreSQL
+db_url = settings.normalized_database_url
 connect_args = {}
-if settings.DATABASE_URL.startswith("sqlite"):
+engine_kwargs = {
+    "echo": False,
+    "pool_pre_ping": True,
+}
+
+if db_url.startswith("sqlite"):
     connect_args = {"check_same_thread": False}
+else:
+    # PostgreSQL production optimizations (Neon / Supabase / Render)
+    engine_kwargs["pool_size"] = 10
+    engine_kwargs["max_overflow"] = 20
+    engine_kwargs["pool_recycle"] = 300
 
 engine = create_engine(
-    settings.DATABASE_URL,
+    db_url,
     connect_args=connect_args,
-    echo=False,
-    pool_pre_ping=True
+    **engine_kwargs
 )
 
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
@@ -41,6 +51,9 @@ def init_db() -> None:
     Base.metadata.create_all(bind=engine)
 
     # SQLite non-destructive schema migration for Phase A3 & B2.1 columns
+    if engine.dialect.name != "sqlite":
+        return
+
     try:
         with engine.connect() as conn:
             # Notifications migration
