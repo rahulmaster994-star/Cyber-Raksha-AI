@@ -3,7 +3,7 @@ Cyber Raksha AI - Citizen Cybercrime Complaint Model
 Assisted integration with cybercrime.gov.in and Helpline 1930.
 """
 from datetime import datetime, timezone
-from sqlalchemy import Column, Integer, String, Text, Float, DateTime, ForeignKey
+from sqlalchemy import Column, Integer, String, Text, Float, Boolean, DateTime, ForeignKey
 from app.database.base import Base
 
 
@@ -24,6 +24,8 @@ class CybercrimeComplaint(Base):
     official_portal_url = Column(String(255), default="https://cybercrime.gov.in", nullable=False)
     helpline_number = Column(String(10), default="1930", nullable=False)
     status = Column(String(32), default="DRAFT", nullable=False)  # DRAFT, AWAITING_SUBMISSION, OFFICIALLY_SUBMITTED, UNDER_REVIEW, ACTION_TAKEN, CLOSED
+    verification_level = Column(String(50), default="USER_REPORTED_UNVERIFIED", nullable=False)  # USER_REPORTED_UNVERIFIED, CITIZEN_PROVIDED_ACK, OFFICIAL_PORTAL_CONFIRMED
+    is_government_verified = Column(Boolean, default=False, nullable=False)
     official_ack_number = Column(String(100), nullable=True, index=True)
     official_submission_date = Column(DateTime, nullable=True)
     official_notes = Column(Text, nullable=True)
@@ -32,3 +34,4 @@ class CybercrimeComplaint(Base):
 
     def __repr__(self) -> str:
         return f"<CybercrimeComplaint id={self.id} complaint_id={self.complaint_id} status={self.status}>"
+

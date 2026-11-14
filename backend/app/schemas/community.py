@@ -33,3 +33,4 @@ class IndicatorReputationResponse(BaseModel):
     total_reports: int
     top_categories: list[str]
     reputation_status: str
+

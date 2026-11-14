@@ -39,8 +39,8 @@ def _get_tracking_instructions(complaint: CybercrimeComplaint) -> str:
             "5. After receiving your official Acknowledgement / FIR reference number, return to Cyber Raksha and enter it under 'Record Ack Number'."
         )
     return (
-        f"Your complaint is officially tracked under Acknowledgement Number: {complaint.official_ack_number}. "
-        "You can check status updates on https://cybercrime.gov.in using this number."
+        f"Citizen Acknowledgement Recorded: Tracked under Citizen-Entered Acknowledgement Number: {complaint.official_ack_number}. "
+        "Official verification by cybercrime.gov.in portal authorities remains pending."
     )
 
 
@@ -57,6 +57,8 @@ def _to_response(complaint: CybercrimeComplaint) -> ComplaintResponse:
         official_portal_url=complaint.official_portal_url,
         helpline_number=complaint.helpline_number,
         status=complaint.status,
+        verification_level=getattr(complaint, "verification_level", "USER_REPORTED_UNVERIFIED"),
+        is_government_verified=getattr(complaint, "is_government_verified", False),
         official_ack_number=complaint.official_ack_number,
         official_submission_date=complaint.official_submission_date.isoformat() if complaint.official_submission_date else None,
         official_notes=complaint.official_notes,
@@ -131,6 +133,8 @@ def record_official_acknowledgement(
     now = datetime.now(timezone.utc)
     complaint.official_ack_number = req.official_ack_number.strip()
     complaint.status = "OFFICIALLY_SUBMITTED"
+    complaint.verification_level = "CITIZEN_PROVIDED_ACK"
+    complaint.is_government_verified = False
     complaint.official_submission_date = now
     if req.notes:
         complaint.official_notes = (complaint.official_notes or "") + f"\n[{now.isoformat()}] {req.notes}"
@@ -215,3 +219,4 @@ def update_complaint_status(
             email_service.send_complaint_status_email(user.email, complaint.complaint_id, new_st, req.notes)
 
     return _to_response(complaint)
+

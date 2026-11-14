@@ -47,4 +47,21 @@ class NotificationProtectionTest {
         assertEquals(0.0f, result.riskScore, 0.01f)
         assertEquals("LOW", result.severity)
     }
+
+    @Test
+    fun testHiddenNotificationPreviewIgnoredSafely() {
+        // When notification previews are hidden by user privacy settings
+        val hidden1 = "1 new message"
+        val hidden2 = "3 new messages"
+        val hidden3 = "New message"
+
+        val res1 = UnifiedRiskEngine.evaluate(hidden1, "WhatsApp")
+        val res2 = UnifiedRiskEngine.evaluate(hidden2, "Telegram")
+        val res3 = UnifiedRiskEngine.evaluate(hidden3, "+919876543210")
+
+        assertEquals("LOW", res1.severity)
+        assertEquals("LOW", res2.severity)
+        assertEquals("LOW", res3.severity)
+        assertEquals(0.0f, res1.riskScore, 0.01f)
+    }
 }

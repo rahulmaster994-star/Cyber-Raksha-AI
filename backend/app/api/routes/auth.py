@@ -184,11 +184,18 @@ def send_mobile_otp(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    """Sends a 6-digit cryptographic OTP to verify the user's Indian mobile number."""
-    success, message, masked = otp_service.request_otp(db, current_user, req.mobile_number)
-    if not success:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=message)
-    return {"status": "SUCCESS", "message": message, "masked_mobile": masked}
+    """Generates and delivers a 6-digit cryptographic OTP to verify the user's Indian mobile number."""
+    result = otp_service.request_otp(db, current_user, req.mobile_number)
+    if not result["success"]:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=result["message"])
+    return {
+        "status": "SUCCESS",
+        "message": result["message"],
+        "masked_mobile": result["masked_mobile"],
+        "telecom_delivered": result["telecom_delivered"],
+        "delivery_channel": result["delivery_channel"],
+        "delivery_detail": result["delivery_detail"]
+    }
 
 
 @router.post("/verify-mobile-otp")
@@ -253,3 +260,4 @@ def delete_user_account(
     db.delete(current_user)
     db.commit()
     return {"status": "DELETED", "message": "Your account and associated profile records have been permanently removed."}
+

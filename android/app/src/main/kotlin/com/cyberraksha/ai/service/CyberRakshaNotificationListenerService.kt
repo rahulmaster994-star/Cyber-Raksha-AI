@@ -33,6 +33,27 @@ class CyberRakshaNotificationListenerService : NotificationListenerService() {
             "org.telegram.messenger",
             "org.thunderdog.challegram"
         )
+        @Volatile
+        var isServiceConnected: Boolean = false
+            private set
+        @Volatile
+        var lastInspectedPackage: String? = null
+            private set
+        @Volatile
+        var lastThreatDetected: String? = null
+            private set
+    }
+
+    override fun onListenerConnected() {
+        super.onListenerConnected()
+        isServiceConnected = true
+        Log.i(TAG, "Cyber Raksha NotificationListenerService connected to Android system.")
+    }
+
+    override fun onListenerDisconnected() {
+        super.onListenerDisconnected()
+        isServiceConnected = false
+        Log.w(TAG, "Cyber Raksha NotificationListenerService disconnected from Android system.")
     }
 
     override fun onNotificationPosted(sbn: StatusBarNotification?) {
@@ -49,9 +70,23 @@ class CyberRakshaNotificationListenerService : NotificationListenerService() {
         val title = extras.getCharSequence(Notification.EXTRA_TITLE)?.toString()?.trim() ?: "Unknown"
         val text = extras.getCharSequence(Notification.EXTRA_BIG_TEXT)?.toString()?.trim()
             ?: extras.getCharSequence(Notification.EXTRA_TEXT)?.toString()?.trim()
-            ?: return
 
-        // Ignore empty, call notifications, or short status messages
+        lastInspectedPackage = pkg
+
+        if (text.isNullOrBlank()) {
+            Log.d(TAG, "[$pkg] Empty notification text (preview hidden or media file). Skipping.")
+            return
+        }
+
+        // Detect if notification previews are hidden by user privacy settings (e.g. "1 new message")
+        if (text.matches(Regex("""^\d+\s+new\s+messages?$""", RegexOption.IGNORE_CASE)) ||
+            text.equals("New message", ignoreCase = true) ||
+            text.equals("WhatsApp", ignoreCase = true)) {
+            Log.i(TAG, "[$pkg] Notification content is masked by user/lockscreen privacy settings: '$text'. Content cannot be analyzed without message preview.")
+            return
+        }
+
+        // Ignore calls or standard non-content alerts
         if (text.length < 5 || text.contains("incoming call", ignoreCase = true) || text.contains("missed call", ignoreCase = true)) {
             return
         }
@@ -62,6 +97,7 @@ class CyberRakshaNotificationListenerService : NotificationListenerService() {
             try {
                 val eval = UnifiedRiskEngine.evaluate(text, title)
                 if (eval.severity == "HIGH" || eval.severity == "CRITICAL") {
+                    lastThreatDetected = "$source: ${eval.category} (${eval.severity})"
                     Log.w(TAG, "[$source THREAT DETECTED] Category: ${eval.category}, Score: ${eval.riskScore}")
 
                     // 1. Alert citizen immediately via high-priority notification

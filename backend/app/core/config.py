@@ -55,6 +55,12 @@ class Settings(BaseSettings):
     SMTP_FROM_EMAIL: str = os.getenv("SMTP_FROM_EMAIL", "noreply@cyberraksha.ai")
     SMTP_FROM_NAME: str = os.getenv("SMTP_FROM_NAME", "Cyber Raksha AI")
     SMTP_USE_TLS: bool = os.getenv("SMTP_USE_TLS", "true").lower() in ("true", "1", "yes")
+
+    # Telecom SMS Gateway Configuration for Physical OTP Delivery
+    FAST2SMS_API_KEY: str = os.getenv("FAST2SMS_API_KEY", "")
+    TWILIO_ACCOUNT_SID: str = os.getenv("TWILIO_ACCOUNT_SID", "")
+    TWILIO_AUTH_TOKEN: str = os.getenv("TWILIO_AUTH_TOKEN", "")
+    TWILIO_FROM_NUMBER: str = os.getenv("TWILIO_FROM_NUMBER", "")
     
     # CORS Origins (supports both CORS_ORIGINS and ALLOWED_ORIGINS env vars)
     CORS_ORIGINS: str = "http://localhost:5173,http://127.0.0.1:5173,http://localhost:3000,http://127.0.0.1:3000"

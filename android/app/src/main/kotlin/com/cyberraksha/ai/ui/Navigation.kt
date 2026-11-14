@@ -124,7 +124,12 @@ fun CyberRakshaNavHost(prefs: AppPreferences) {
         composable(Routes.SETTINGS) {
             SettingsScreen(
                 prefs = prefs,
-                onBack = { navController.popBackStack() }
+                onBack = { navController.popBackStack() },
+                onLogout = {
+                    navController.navigate(Routes.AUTH) {
+                        popUpTo(0) { inclusive = true }
+                    }
+                }
             )
         }
         composable(Routes.SMS_PROTECTION) {

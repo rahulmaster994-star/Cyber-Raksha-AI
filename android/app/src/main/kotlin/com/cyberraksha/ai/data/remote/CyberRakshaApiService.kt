@@ -131,6 +131,11 @@ interface CyberRakshaApiService {
         @Header("Authorization") bearerToken: String
     ): Response<UserProfileResponseDto>
 
+    @DELETE("api/v1/auth/account")
+    suspend fun deleteAccount(
+        @Header("Authorization") bearerToken: String
+    ): Response<Map<String, String>>
+
     // ── Cybercrime Complaints ─────────────────────────────────────────────
 
     @POST("api/v1/complaints/draft")

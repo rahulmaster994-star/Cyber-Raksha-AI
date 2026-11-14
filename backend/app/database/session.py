@@ -157,6 +157,28 @@ def init_db() -> None:
                     if col_name not in inc_cols:
                         conn.execute(text(f"ALTER TABLE security_incidents ADD COLUMN {col_name} {col_def}"))
 
+            # Cybercrime Complaints migration
+            cmp_info = conn.execute(text("PRAGMA table_info(cybercrime_complaints)")).fetchall()
+            cmp_cols = {col[1] for col in cmp_info}
+            if cmp_cols:
+                if "verification_level" not in cmp_cols:
+                    conn.execute(text("ALTER TABLE cybercrime_complaints ADD COLUMN verification_level VARCHAR(50) DEFAULT 'USER_REPORTED_UNVERIFIED'"))
+                if "is_government_verified" not in cmp_cols:
+                    conn.execute(text("ALTER TABLE cybercrime_complaints ADD COLUMN is_government_verified BOOLEAN DEFAULT 0"))
+
+            # Community Reports migration
+            com_info = conn.execute(text("PRAGMA table_info(community_reports)")).fetchall()
+            com_cols = {col[1] for col in com_info}
+            if com_cols:
+                if "distinct_reporters_count" not in com_cols:
+                    conn.execute(text("ALTER TABLE community_reports ADD COLUMN distinct_reporters_count INTEGER DEFAULT 1"))
+                if "reporting_identities_json" not in com_cols:
+                    conn.execute(text("ALTER TABLE community_reports ADD COLUMN reporting_identities_json TEXT DEFAULT '[]'"))
+                if "consensus_score" not in com_cols:
+                    conn.execute(text("ALTER TABLE community_reports ADD COLUMN consensus_score FLOAT DEFAULT 0.2"))
+                if "is_auto_promoted" not in com_cols:
+                    conn.execute(text("ALTER TABLE community_reports ADD COLUMN is_auto_promoted BOOLEAN DEFAULT 0"))
+
             conn.commit()
     except Exception as e:
         import logging

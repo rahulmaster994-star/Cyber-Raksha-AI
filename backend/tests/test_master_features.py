@@ -103,6 +103,8 @@ def test_complaint_assistant_flow(client):
     ack_data = ack_r.json()
     assert ack_data["status"] == "OFFICIALLY_SUBMITTED"
     assert ack_data["official_ack_number"] == "ACK-2026-IN-987654"
+    assert ack_data["verification_level"] == "CITIZEN_PROVIDED_ACK"
+    assert ack_data["is_government_verified"] is False
 
     # 3. List complaints
     list_r = client.get("/api/v1/complaints", headers=headers)
@@ -119,7 +121,8 @@ def test_community_threat_reporting_and_reputation(client):
         "indicator_type": "PHONE",
         "category": "DIGITAL_ARREST",
         "description": "Suspect called impersonating CBI officer demanding video KYC.",
-        "severity": "CRITICAL"
+        "severity": "CRITICAL",
+        "device_id": "test-device-alpha-1"
     }
 
     # Submit report 1
@@ -127,21 +130,26 @@ def test_community_threat_reporting_and_reputation(client):
     assert r1.status_code == 201
     assert r1.json()["total_reports"] == 1
 
+    # Sybil abuse prevention: Same device submitting duplicate report must be rejected with 409 Conflict
+    dup_r = client.post("/api/v1/community/report", json=report_payload)
+    assert dup_r.status_code == 409
+    assert "Duplicate submission rejected" in dup_r.json()["detail"]
+
     # Check initial reputation
     rep_r = client.get(f"/api/v1/community/reputation/{indicator}")
     assert rep_r.status_code == 200
     rep_data = rep_r.json()
     assert rep_data["total_reports"] == 1
-    assert rep_data["reputation_status"] in ("REPORTED", "SUSPICIOUS")
+    assert rep_data["is_malicious"] is False
 
-    # Submit 2 more reports to escalate to threshold
-    client.post("/api/v1/community/report", json=report_payload)
-    client.post("/api/v1/community/report", json=report_payload)
+    # Submit from distinct devices
+    client.post("/api/v1/community/report", json={**report_payload, "device_id": "test-device-beta-2"})
+    client.post("/api/v1/community/report", json={**report_payload, "device_id": "test-device-gamma-3"})
 
-    # Re-check reputation
+    # Re-check reputation: 3 unverified reports must NOT mark it as confirmed malicious or auto-promote without verification
     rep_r3 = client.get(f"/api/v1/community/reputation/{indicator}")
     assert rep_r3.status_code == 200
     data3 = rep_r3.json()
     assert data3["total_reports"] == 3
-    assert data3["is_malicious"] is True
-    assert data3["risk_score"] >= 75.0
+    assert data3["is_malicious"] is False  # Abuse prevention: unverified community reports are never marked confirmed malicious without analyst review
+    assert data3["reputation_status"] in ("SUSPICIOUS", "COMMUNITY_REPORTED")

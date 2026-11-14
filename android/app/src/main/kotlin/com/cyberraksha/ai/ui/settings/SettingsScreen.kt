@@ -17,16 +17,26 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.cyberraksha.ai.core.AppPreferences
 import com.cyberraksha.ai.ui.theme.*
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SettingsScreen(
     prefs: AppPreferences,
     onBack: () -> Unit,
+    onLogout: () -> Unit = {},
     viewModel: SettingsViewModel = remember { SettingsViewModel(prefs) }
 ) {
     val state by viewModel.uiState.collectAsState()
     var severityMenuExpanded by remember { mutableStateOf(false) }
+    var showDeleteDialog by remember { mutableStateOf(false) }
+
+    val coroutineScope = rememberCoroutineScope()
+    val userName by prefs.userName.collectAsState(initial = null)
+    val userEmail by prefs.userEmail.collectAsState(initial = null)
+    val userMobile by prefs.userMobile.collectAsState(initial = null)
+    val isMobileVerified by prefs.isMobileVerified.collectAsState(initial = false)
+    val userToken by prefs.userToken.collectAsState(initial = null)
 
     Scaffold(
         topBar = {
@@ -222,7 +232,93 @@ fun SettingsScreen(
                     }
                 }
             }
+
+            // Citizen Account & Data Governance Card (DPDP Act Compliance)
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(containerColor = DarkSurface),
+                shape = RoundedCornerShape(16.dp)
+            ) {
+                Column(modifier = Modifier.padding(18.dp)) {
+                    Text(
+                        text = "Citizen Account & Data Governance",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.SemiBold,
+                        color = TextPrimary
+                    )
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    InfoRow("Account Name", userName ?: "Citizen")
+                    InfoRow("Email", userEmail ?: "Not configured")
+                    InfoRow("Mobile (+91)", userMobile ?: "Not linked")
+                    InfoRow("Mobile Status", if (isMobileVerified) "Verified (Protected)" else "Pending OTP Verification")
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        OutlinedButton(
+                            onClick = {
+                                coroutineScope.launch {
+                                    prefs.clearUserSession()
+                                    onLogout()
+                                }
+                            },
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Text("Sign Out", color = TextPrimary)
+                        }
+
+                        Button(
+                            onClick = { showDeleteDialog = true },
+                            colors = ButtonDefaults.buttonColors(containerColor = SeverityCritical.copy(alpha = 0.2f), contentColor = SeverityCritical),
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Text("Delete Account")
+                        }
+                    }
+                }
+            }
         }
+    }
+
+    if (showDeleteDialog) {
+        AlertDialog(
+            onDismissRequest = { showDeleteDialog = false },
+            title = { Text("Delete Account & Data", color = SeverityCritical) },
+            text = {
+                Text(
+                    "Are you sure you want to permanently delete your Cyber Raksha account and all associated threat records? This action cannot be undone.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = TextSecondary
+                )
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        showDeleteDialog = false
+                        coroutineScope.launch {
+                            try {
+                                val api = com.cyberraksha.ai.data.remote.NetworkModule.getApiService(state.backendUrl)
+                                userToken?.let { api.deleteAccount("Bearer $it") }
+                            } catch (_: Exception) {}
+                            prefs.clearUserSession()
+                            onLogout()
+                        }
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = SeverityCritical, contentColor = androidx.compose.ui.graphics.Color.White)
+                ) {
+                    Text("Delete Permanently")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDeleteDialog = false }) {
+                    Text("Cancel", color = TextSecondary)
+                }
+            }
+        )
     }
 }
 

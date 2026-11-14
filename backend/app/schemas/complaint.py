@@ -39,8 +39,11 @@ class ComplaintResponse(BaseModel):
     official_portal_url: str
     helpline_number: str
     status: str
+    verification_level: str = "USER_REPORTED_UNVERIFIED"
+    is_government_verified: bool = False
     official_ack_number: Optional[str] = None
     official_submission_date: Optional[str] = None
     official_notes: Optional[str] = None
     created_at: str
     tracking_instructions: str
+

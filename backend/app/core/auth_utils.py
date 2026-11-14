@@ -109,3 +109,4 @@ def generate_otp(length: int = 6) -> str:
 def generate_verification_token() -> str:
     """Generates a secure random URL-safe verification token."""
     return secrets.token_urlsafe(32)
+

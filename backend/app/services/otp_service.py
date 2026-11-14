@@ -1,11 +1,13 @@
 """
 Cyber Raksha AI - Mobile OTP Verification Service
 Supports secure 6-digit cryptographic OTP generation, expiry, rate limiting, and verification.
+Integrates Fast2SMS and Twilio telecom gateways with truthful delivery status reporting.
 """
 import re
 import logging
 from datetime import datetime, timezone, timedelta
-from typing import Tuple, Optional
+from typing import Tuple, Optional, Dict, Any
+import httpx
 from sqlalchemy.orm import Session
 from app.models.user import User
 from app.core.config import settings
@@ -44,14 +46,75 @@ class OtpService:
     def __init__(self):
         self.mock_sms_gateway_log = []
 
-    def request_otp(self, db: Session, user: User, mobile_number: str) -> Tuple[bool, str, Optional[str]]:
+    def _dispatch_telecom_sms(self, normalized_mobile: str, otp: str) -> Tuple[bool, str, str]:
+        """
+        Attempts real over-the-air telecom SMS dispatch via configured SMS providers.
+        Returns (is_dispatched, channel_status, status_detail).
+        """
+        # 1. Fast2SMS Integration (Standard Indian SMS Gateway)
+        if settings.FAST2SMS_API_KEY and settings.FAST2SMS_API_KEY.strip():
+            ten_digit = normalized_mobile.replace("+91", "")
+            try:
+                headers = {
+                    "authorization": settings.FAST2SMS_API_KEY.strip(),
+                    "Content-Type": "application/json"
+                }
+                payload = {
+                    "variables_values": otp,
+                    "route": "otp",
+                    "numbers": ten_digit
+                }
+                with httpx.Client(timeout=8.0) as client:
+                    resp = client.post("https://www.fast2sms.com/dev/bulkV2", json=payload, headers=headers)
+                    if resp.status_code == 200:
+                        logger.info(f"Fast2SMS dispatched OTP successfully to {mask_mobile_number(normalized_mobile)}")
+                        return True, "FAST2SMS_DELIVERED", "SMS dispatched over telecom network via Fast2SMS gateway."
+                    else:
+                        logger.warning(f"Fast2SMS API returned status {resp.status_code}: {resp.text}")
+                        return False, "FAST2SMS_FAILED", f"Fast2SMS gateway returned error: {resp.status_code}"
+            except Exception as e:
+                logger.error(f"Fast2SMS dispatch error: {e}")
+                return False, "FAST2SMS_ERROR", str(e)
+
+        # 2. Twilio Integration (Global Gateway)
+        if settings.TWILIO_ACCOUNT_SID and settings.TWILIO_AUTH_TOKEN and settings.TWILIO_FROM_NUMBER:
+            try:
+                auth = (settings.TWILIO_ACCOUNT_SID.strip(), settings.TWILIO_AUTH_TOKEN.strip())
+                data = {
+                    "To": normalized_mobile,
+                    "From": settings.TWILIO_FROM_NUMBER.strip(),
+                    "Body": f"Cyber Raksha AI verification code: {otp}. Valid for 10 minutes. Do not share with anyone."
+                }
+                url = f"https://api.twilio.com/2010-04-01/Accounts/{settings.TWILIO_ACCOUNT_SID.strip()}/Messages.json"
+                with httpx.Client(timeout=8.0) as client:
+                    resp = client.post(url, data=data, auth=auth)
+                    if resp.status_code in (200, 201):
+                        logger.info(f"Twilio dispatched OTP successfully to {mask_mobile_number(normalized_mobile)}")
+                        return True, "TWILIO_DELIVERED", "SMS dispatched over telecom network via Twilio gateway."
+                    else:
+                        logger.warning(f"Twilio API returned status {resp.status_code}: {resp.text}")
+                        return False, "TWILIO_FAILED", f"Twilio gateway returned error: {resp.status_code}"
+            except Exception as e:
+                logger.error(f"Twilio dispatch error: {e}")
+                return False, "TWILIO_ERROR", str(e)
+
+        # 3. No Gateway Configured - Truthful audit reporting
+        logger.info(f"[SMS GATEWAY AUDIT] Physical SMS delivery awaiting telecom credentials (FAST2SMS_API_KEY or TWILIO_ACCOUNT_SID). Target: {mask_mobile_number(normalized_mobile)}")
+        return False, "AWAITING_TELECOM_GATEWAY_CONFIG", "Telecom SMS Gateway API credentials not configured in server environment. OTP generated and stored securely in trusted backend database session."
+
+    def request_otp(self, db: Session, user: User, mobile_number: str) -> Dict[str, Any]:
         """
         Generates and stores OTP for user with 10-minute expiry and attempt counter.
-        Returns (success, message, masked_mobile).
+        Returns dict with status, masked mobile, and delivery channel details.
         """
         normalized = normalize_indian_mobile(mobile_number)
         if not normalized:
-            return False, "Invalid mobile number. Must be a valid 10-digit Indian mobile number (+91).", None
+            return {
+                "success": False,
+                "message": "Invalid mobile number. Must be a valid 10-digit Indian mobile number (+91).",
+                "masked_mobile": None,
+                "delivery_channel": "NONE"
+            }
 
         # Check if already used by another verified user
         existing = db.query(User).filter(
@@ -60,7 +123,12 @@ class OtpService:
             User.id != user.id
         ).first()
         if existing:
-            return False, "This mobile number is already registered and verified with another account.", None
+            return {
+                "success": False,
+                "message": "This mobile number is already registered and verified with another account.",
+                "masked_mobile": None,
+                "delivery_channel": "NONE"
+            }
 
         now = datetime.now(timezone.utc)
         otp = generate_otp(6)
@@ -72,16 +140,24 @@ class OtpService:
         user.mobile_otp_attempts = 0
         db.commit()
 
-        # In a production telecom environment, SMS gateway API (e.g. Twilio / Gupshup / Fast2SMS) is called here.
-        # Defensive logging and in-memory trace for testing and verification:
-        logger.info(f"[SMS GATEWAY DISPATCH] OTP sent to {mask_mobile_number(normalized)}: [REDACTED IN LOGS]")
+        # Attempt telecom dispatch
+        is_sent, channel, channel_detail = self._dispatch_telecom_sms(normalized, otp)
+
         self.mock_sms_gateway_log.append({
             "mobile": normalized,
+            "channel": channel,
             "timestamp": now.isoformat(),
             "expires_at": expires_at.isoformat()
         })
 
-        return True, "Verification OTP has been sent successfully to your mobile number.", mask_mobile_number(normalized)
+        return {
+            "success": True,
+            "message": "Verification OTP has been generated by the backend server.",
+            "masked_mobile": mask_mobile_number(normalized),
+            "telecom_delivered": is_sent,
+            "delivery_channel": channel,
+            "delivery_detail": channel_detail
+        }
 
     def verify_otp(self, db: Session, user: User, entered_otp: str) -> Tuple[bool, str]:
         """
