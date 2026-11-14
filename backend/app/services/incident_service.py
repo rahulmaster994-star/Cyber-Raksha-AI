@@ -51,10 +51,30 @@ class IncidentService:
         cutoff = now - timedelta(hours=24)
         existing = None
         if clean_indicator:
+            # Extract domain if URL for cross-vector multi-platform correlation
+            extracted_domain = None
+            if "://" in clean_indicator:
+                from urllib.parse import urlparse
+                try:
+                    extracted_domain = urlparse(clean_indicator).hostname
+                except Exception:
+                    pass
+            elif "/" in clean_indicator:
+                extracted_domain = clean_indicator.split("/")[0]
+
+            from sqlalchemy import or_
+            match_conditions = [
+                SecurityIncident.target_or_indicator == clean_indicator,
+                SecurityIncident.target_or_indicator.like(f"%{clean_indicator}%")
+            ]
+            if extracted_domain:
+                match_conditions.append(SecurityIncident.target_or_indicator == extracted_domain)
+                match_conditions.append(SecurityIncident.target_or_indicator.like(f"%{extracted_domain}%"))
+
             inc_query = (
                 db.query(SecurityIncident)
                 .filter(
-                    SecurityIncident.target_or_indicator == clean_indicator,
+                    or_(*match_conditions),
                     SecurityIncident.status.notin_(["RESOLVED", "CLOSED", "FALSE_POSITIVE"]),
                     SecurityIncident.created_at >= cutoff
                 )

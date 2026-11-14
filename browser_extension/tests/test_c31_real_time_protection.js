@@ -18,7 +18,7 @@
 const assert = require('assert');
 const {
   SHARED_DOMAINS,
-  KNOWN_SAFE_DOMAINS,
+  EXACT_SAFE_INFRASTRUCTURE_HOSTS,
   MAX_DYNAMIC_RULES,
   MIN_CONFIDENCE_THRESHOLD,
   SENSITIVE_QUERY_PARAMS,
@@ -141,21 +141,35 @@ async function runStageC31TestSuite() {
   }
 
   // -------------------------------------------------------------------------
-  // TEST 2: Legitimate Website Allowance (No False Blocking)
+  // TEST 2: Legitimate Website Allowance & Suffix Whitelist Hardening
   // -------------------------------------------------------------------------
   try {
     const safeDomains = [
       'google.com',
       'www.google.com',
+      'accounts.google.com',
       'microsoft.com',
+      'login.microsoftonline.com',
       'github.com',
-      'vercel.app',
       'frontend-lilac-nu-50.vercel.app',
       'cyberraksha-backend.onrender.com'
     ];
 
     for (const d of safeDomains) {
       assert(isWhitelistedSafeDomain(d), `${d} must be recognized as whitelisted safe domain`);
+    }
+
+    // GAP-SEC-01 Validation: Shared-hosting multi-tenant subdomains must NEVER be whitelisted
+    const sharedTenantAbuse = [
+      'evil-phishing.vercel.app',
+      'sbi-netbanking-fake.onrender.com',
+      'malicious-payload.github.io',
+      'phish-login.pages.dev',
+      'xn--google-sample.com' // Punycode / IDN spoofing
+    ];
+
+    for (const bad of sharedTenantAbuse) {
+      assert(!isWhitelistedSafeDomain(bad), `Tenant abuse domain ${bad} must NEVER be whitelisted`);
     }
 
     // Ensure legitimate domains NEVER match the malicious regex
@@ -167,7 +181,7 @@ async function runStageC31TestSuite() {
       assert(!maliciousRegex.test(`https://${d}/login`), `Legitimate login on ${d} must NEVER match malicious rule`);
     }
 
-    report('TEST 2: Legitimate Website Allowance (Zero False Positives)', true, 'All safe domains whitelisted & free from interference');
+    report('TEST 2: Legitimate Website Allowance & Suffix Hardening', true, 'Exact infrastructure verified; shared-hosting wildcards blocked');
   } catch (err) {
     report('TEST 2: Legitimate Website Allowance (Zero False Positives)', false, err.message);
   }
@@ -429,3 +443,4 @@ async function runStageC31TestSuite() {
 }
 
 runStageC31TestSuite();
+

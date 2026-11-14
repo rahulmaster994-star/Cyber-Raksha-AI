@@ -380,30 +380,69 @@ function sanitizeUrl(urlStr) {
 }
 
 /**
- * Verified infrastructure and popular safe domains to avoid unnecessary blocking
+ * Exact verified infrastructure hostnames.
+ * Subdomains of multi-tenant shared hosts (e.g. *.vercel.app, *.onrender.com, *.github.io)
+ * are NEVER whitelisted as a wildcard suffix to prevent tenant spoofing.
  */
-const KNOWN_SAFE_DOMAINS = new Set([
-  'google.com', 'www.google.com', 'accounts.google.com', 'mail.google.com',
-  'microsoft.com', 'www.microsoft.com', 'login.microsoftonline.com',
-  'apple.com', 'www.apple.com',
-  'github.com', 'www.github.com', 'api.github.com',
-  'wikipedia.org', 'en.wikipedia.org',
-  'youtube.com', 'www.youtube.com',
-  'vercel.app', 'onrender.com', 'neon.tech',
-  'cyberraksha-backend.onrender.com', 'frontend-lilac-nu-50.vercel.app',
-  'localhost', '127.0.0.1'
+const EXACT_SAFE_INFRASTRUCTURE_HOSTS = new Set([
+  'cyberraksha-backend.onrender.com',
+  'frontend-lilac-nu-50.vercel.app',
+  'frontend-rahulmaster994-star.vercel.app',
+  'accounts.google.com',
+  'mail.google.com',
+  'www.google.com',
+  'google.com',
+  'login.microsoftonline.com',
+  'www.microsoft.com',
+  'microsoft.com',
+  'apple.com',
+  'www.apple.com',
+  'api.github.com',
+  'www.github.com',
+  'github.com',
+  'en.wikipedia.org',
+  'wikipedia.org',
+  'www.youtube.com',
+  'youtube.com',
+  'neon.tech',
+  'console.neon.tech',
+  'localhost',
+  '127.0.0.1'
 ]);
 
 /**
- * Checks if a hostname belongs to a known safe infrastructure domain
+ * Checks if a hostname is an exact verified safe infrastructure host.
+ * Strictly prevents wildcard suffix abuse on shared multi-tenant hosts.
  */
 function isWhitelistedSafeDomain(hostname) {
-  if (!hostname) return false;
-  const host = hostname.toLowerCase().trim();
-  if (KNOWN_SAFE_DOMAINS.has(host)) return true;
-  for (const safe of KNOWN_SAFE_DOMAINS) {
-    if (host === safe || host.endsWith('.' + safe)) return true;
+  if (!hostname || typeof hostname !== 'string') return false;
+  const host = hostname.toLowerCase().trim().split(':')[0];
+
+  // Punycode / IDN must not impersonate ASCII whitelists
+  if (host.startsWith('xn--') || host.includes('.xn--')) {
+    return false;
   }
+
+  // Exact match check
+  if (EXACT_SAFE_INFRASTRUCTURE_HOSTS.has(host)) {
+    return true;
+  }
+
+  // Permitted subdomains ONLY for dedicated core organizations (never multi-tenant hosting)
+  const DEDICATED_ORGANIZATIONS = [
+    'google.com',
+    'microsoft.com',
+    'apple.com',
+    'wikipedia.org',
+    'youtube.com'
+  ];
+
+  for (const org of DEDICATED_ORGANIZATIONS) {
+    if (host.endsWith('.' + org)) {
+      return true;
+    }
+  }
+
   return false;
 }
 
@@ -459,7 +498,7 @@ function createDynamicBlockRule(targetUrl, threatType = 'PHISHING', severity = '
 if (typeof module !== 'undefined' && module.exports) {
   module.exports = {
     SHARED_DOMAINS,
-    KNOWN_SAFE_DOMAINS,
+    EXACT_SAFE_INFRASTRUCTURE_HOSTS,
     MAX_DYNAMIC_RULES,
     MIN_CONFIDENCE_THRESHOLD,
     SENSITIVE_QUERY_PARAMS,

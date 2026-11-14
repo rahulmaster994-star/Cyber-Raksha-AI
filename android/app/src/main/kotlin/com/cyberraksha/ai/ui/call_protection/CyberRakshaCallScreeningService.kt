@@ -4,11 +4,13 @@ import android.os.Build
 import android.telecom.Call
 import android.telecom.CallScreeningService
 import androidx.annotation.RequiresApi
+import com.cyberraksha.ai.core.AppPreferences
 import com.cyberraksha.ai.data.remote.NetworkModule
 import com.cyberraksha.ai.data.remote.NumberCheckRequest
 import com.cyberraksha.ai.notifications.NotificationHelper
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeoutOrNull
 
@@ -28,10 +30,13 @@ class CyberRakshaCallScreeningService : CallScreeningService() {
             // Telecom framework requires response within ~5 seconds
             val result = withTimeoutOrNull(3000L) {
                 try {
-                    val api = NetworkModule.getApiService()
+                    val prefs = AppPreferences(applicationContext)
+                    val registeredId = prefs.deviceId.firstOrNull() ?: "android-call-screener"
+                    val backendUrl = prefs.backendUrl.firstOrNull() ?: AppPreferences.DEFAULT_BACKEND_URL
+                    val api = NetworkModule.getApiService(backendUrl)
                     val res = api.checkNumber(
                         NumberCheckRequest(
-                            deviceId = "android-call-screener",
+                            deviceId = registeredId,
                             phoneNumber = rawHandle
                         )
                     )

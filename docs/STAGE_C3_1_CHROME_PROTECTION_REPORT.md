@@ -265,3 +265,4 @@ To load and verify the unpacked extension in Google Chrome:
 1. **Cold Start Latency:** On Render Free Tier, if the backend is idle (> 15 min), the first live detection query may hit the 1800ms timeout ceiling and fail open. Cached rules and feed indicators continue to protect instantaneously.
 2. **Dynamic Rule Cap:** Chrome Manifest V3 limits dynamic rules to 5,000 (and 1,000 regex rules). The manager caps dynamic rules at 900 to ensure strict stability within browser resource limits.
 3. **Stage C3.2 Recommendation:** Implement client-side lightweight TensorFlow.js / ONNX model inference inside an offscreen document or web worker for zero-network phishing detection.
+

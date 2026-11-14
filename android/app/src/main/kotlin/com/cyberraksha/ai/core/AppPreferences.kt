@@ -23,7 +23,7 @@ class AppPreferences(private val context: Context) {
         val KEY_LAST_SYNC = longPreferencesKey("last_sync_timestamp")
         val KEY_NOTIFICATIONS_ENABLED = booleanPreferencesKey("notifications_enabled")
         val KEY_MIN_SEVERITY = stringPreferencesKey("min_severity")
-        const val DEFAULT_BACKEND_URL = "http://10.0.2.2:8000"
+        const val DEFAULT_BACKEND_URL = "https://cyberraksha-backend.onrender.com"
     }
 
     val deviceId: Flow<String?> = context.dataStore.data.map { it[KEY_DEVICE_ID] }

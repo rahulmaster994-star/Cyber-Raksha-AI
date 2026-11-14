@@ -32,14 +32,18 @@ document.addEventListener('DOMContentLoaded', async () => {
   riskLevelVal.innerText = `${level} RISK`;
   threatClassVal.innerText = classification;
 
-  if (source === 'REALTIME_DNR' || source === 'REALTIME') {
-    modeVal.innerText = 'Real-Time Protection';
-    modeVal.style.color = '#ef4444';
-  } else if (source === 'DNR') {
-    modeVal.innerText = 'Pre-Load Declarative Block';
+  if (source === 'REALTIME_DNR' || source === 'REALTIME_DETECTOR' || source === 'REALTIME') {
+    modeVal.innerText = 'In-Flight ML Interception & Dynamic Quarantine';
+    modeVal.style.color = '#f87171';
+    reasonsBox.innerText =
+      'This destination was evaluated dynamically during navigation by the Cyber Raksha AI detection engine. Severe phishing patterns were identified; the tab was quarantined immediately to this warning page, and a network-level DNR rule was dynamically compiled.';
+  } else if (source === 'DNR' || source === 'THREAT_FEED') {
+    modeVal.innerText = 'Pre-Load Network Shield (Guaranteed Pre-Connection Block)';
     modeVal.style.color = '#38bdf8';
+    reasonsBox.innerText =
+      'This destination matches a verified threat intelligence indicator. Chromium Declarative Net Request intercepted navigation at the network layer before any TCP connection or HTTP request was sent to the destination server.';
   } else {
-    modeVal.innerText = 'Context Menu Scan';
+    modeVal.innerText = 'User-Initiated Context Menu Scan';
     modeVal.style.color = '#a78bfa';
   }
 
