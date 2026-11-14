@@ -319,7 +319,7 @@ private fun StepRegistration(
             OutlinedTextField(
                 value = backendUrl,
                 onValueChange = onBackendUrlChange,
-                label = { Text("Backend URL (Host/Emulator)") },
+                label = { Text("Backend URL") },
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true,
                 colors = OutlinedTextFieldDefaults.colors(
@@ -329,7 +329,7 @@ private fun StepRegistration(
             )
 
             Text(
-                text = "Note: Use http://10.0.2.2:8000 on standard Android Emulator, or your local machine IP on physical device.",
+                text = "Default: https://cyberraksha-backend.onrender.com (production cloud). Only change for local development.",
                 style = MaterialTheme.typography.labelSmall,
                 color = TextSecondary,
                 modifier = Modifier.padding(top = 4.dp)

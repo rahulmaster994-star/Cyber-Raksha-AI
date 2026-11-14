@@ -68,9 +68,9 @@ data class NotificationItem(
 )
 
 data class NotificationListResponse(
-    @SerializedName("notifications") val notifications: List<NotificationItem>,
-    @SerializedName("total")         val total: Int,
-    @SerializedName("unread_count")  val unreadCount: Int
+    @SerializedName(value = "notifications", alternate = ["items"]) val notifications: List<NotificationItem>? = emptyList(),
+    @SerializedName("total")         val total: Int = 0,
+    @SerializedName("unread_count")  val unreadCount: Int = 0
 )
 
 data class UnreadCountResponse(
@@ -84,10 +84,19 @@ data class MarkReadResponse(
 
 // ── Health ────────────────────────────────────────────────────────────────────
 
+// FIX: Added all fields returned by the actual HealthCheckResponse schema.
+// The backend returns status="healthy" (not "ok") plus additional fields.
+// Missing fields with default=null are safe — Gson ignores unknown JSON keys.
 data class HealthResponse(
-    @SerializedName("status")    val status: String,
-    @SerializedName("version")   val version: String?,
-    @SerializedName("timestamp") val timestamp: String?
+    @SerializedName("status")               val status: String,
+    @SerializedName("application")          val application: String? = null,
+    @SerializedName("version")              val version: String? = null,
+    @SerializedName("stage")                val stage: String? = null,
+    @SerializedName("database_connected")   val databaseConnected: Boolean? = null,
+    @SerializedName("database_latency_ms")  val databaseLatencyMs: Double? = null,
+    @SerializedName("database_message")     val databaseMessage: String? = null,
+    @SerializedName("uptime_seconds")       val uptimeSeconds: Double? = null,
+    @SerializedName("timestamp")            val timestamp: String? = null
 )
 
 data class DetailedHealthComponent(

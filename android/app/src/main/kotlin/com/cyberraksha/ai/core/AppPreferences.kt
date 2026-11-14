@@ -33,7 +33,14 @@ class AppPreferences(private val context: Context) {
         if (!stored.isNullOrBlank()) SecureTokenManager.decrypt(stored) else null 
     }
     val onboardingComplete: Flow<Boolean> = context.dataStore.data.map { it[KEY_ONBOARDING_COMPLETE] ?: false }
-    val backendUrl: Flow<String> = context.dataStore.data.map { it[KEY_BACKEND_URL] ?: DEFAULT_BACKEND_URL }
+    val backendUrl: Flow<String> = context.dataStore.data.map { 
+        val stored = it[KEY_BACKEND_URL]?.trim()
+        if (stored.isNullOrBlank() || stored.contains("10.0.2.2") || stored.contains("localhost") || stored.contains("127.0.0.1")) {
+            DEFAULT_BACKEND_URL
+        } else {
+            stored
+        }
+    }
     val lastSyncTimestamp: Flow<Long> = context.dataStore.data.map { it[KEY_LAST_SYNC] ?: 0L }
     val notificationsEnabled: Flow<Boolean> = context.dataStore.data.map { it[KEY_NOTIFICATIONS_ENABLED] ?: true }
     val minSeverity: Flow<String> = context.dataStore.data.map { it[KEY_MIN_SEVERITY] ?: "LOW" }

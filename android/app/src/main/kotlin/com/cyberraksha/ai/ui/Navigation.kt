@@ -51,17 +51,19 @@ fun CyberRakshaNavHost(prefs: AppPreferences) {
         ).fallbackToDestructiveMigration().build()
     }
 
-    val mobileRepository = remember {
+    val backendUrl by prefs.backendUrl.collectAsState(initial = AppPreferences.DEFAULT_BACKEND_URL)
+
+    val mobileRepository = remember(backendUrl) {
         MobileProtectionRepository(
-            api = NetworkModule.getApiService(),
+            api = NetworkModule.getApiService(backendUrl),
             smsDao = db.smsAnalysisDao(),
             prefs = prefs
         )
     }
 
-    val analyzeMessageUseCase = remember { AnalyzeMessageUseCase(mobileRepository) }
-    val checkNumberUseCase    = remember { CheckNumberUseCase(mobileRepository) }
-    val reportThreatUseCase   = remember { ReportThreatUseCase(mobileRepository) }
+    val analyzeMessageUseCase = remember(mobileRepository) { AnalyzeMessageUseCase(mobileRepository) }
+    val checkNumberUseCase    = remember(mobileRepository) { CheckNumberUseCase(mobileRepository) }
+    val reportThreatUseCase   = remember(mobileRepository) { ReportThreatUseCase(mobileRepository) }
 
     val start = if (onboardingComplete) Routes.DASHBOARD else Routes.ONBOARDING
 

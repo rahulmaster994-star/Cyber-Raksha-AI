@@ -84,6 +84,21 @@ class DashboardViewModel(
                 return@launch
             }
 
+            // Restore device token if available
+            deviceRepo.restoreDeviceToken()
+
+            // Auto-register device if deviceId is not yet registered
+            var currentDeviceId = prefs.deviceId.firstOrNull()
+            if (currentDeviceId.isNullOrBlank()) {
+                val registerUseCase = com.cyberraksha.ai.domain.usecase.RegisterDeviceUseCase(prefs, deviceRepo)
+                val devName = prefs.deviceName.firstOrNull()?.ifEmpty { null } ?: "${android.os.Build.MANUFACTURER} ${android.os.Build.MODEL}".trim()
+                val regRes = registerUseCase(devName)
+                if (regRes is Result.Success) {
+                    currentDeviceId = regRes.data
+                    _uiState.update { it.copy(deviceId = currentDeviceId) }
+                }
+            }
+
             // 2. Sync notifications
             syncUseCase()
 
