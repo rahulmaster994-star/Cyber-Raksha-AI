@@ -46,7 +46,8 @@ fun DashboardScreen(
     onNavigateToSettings: () -> Unit,
     onNavigateToSmsProtection: () -> Unit = {},
     onNavigateToCallProtection: () -> Unit = {},
-    onNavigateToThreatHistory: () -> Unit = {}
+    onNavigateToThreatHistory: () -> Unit = {},
+    onNavigateToComplaints: () -> Unit = {}
 ) {
     val context = LocalContext.current
     val db = remember {
@@ -159,6 +160,13 @@ fun DashboardScreen(
                                 tint = TextPrimary
                             )
                         }
+                    }
+                    IconButton(onClick = onNavigateToComplaints) {
+                        Icon(
+                            imageVector = Icons.Default.Gavel,
+                            contentDescription = "Cybercrime Complaint Assistant",
+                            tint = CyberCyan
+                        )
                     }
                     IconButton(onClick = onNavigateToSettings) {
                         Icon(
@@ -286,6 +294,61 @@ fun DashboardScreen(
                     onOpenCall = onNavigateToCallProtection,
                     onOpenHistory = onNavigateToThreatHistory
                 )
+            }
+
+            // Cybercrime Complaint Assistant Card (cybercrime.gov.in & Helpline 1930)
+            item {
+                Card(
+                    colors = CardDefaults.cardColors(containerColor = DarkSurface),
+                    shape = RoundedCornerShape(12.dp),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Column(modifier = Modifier.padding(16.dp)) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Icon(
+                                    imageVector = Icons.Default.Gavel,
+                                    contentDescription = null,
+                                    tint = CyberCyan,
+                                    modifier = Modifier.size(24.dp)
+                                )
+                                Spacer(modifier = Modifier.width(10.dp))
+                                Column {
+                                    Text(
+                                        text = "Cybercrime Complaint Assistant",
+                                        fontWeight = FontWeight.Bold,
+                                        color = TextPrimary,
+                                        fontSize = 15.sp
+                                    )
+                                    Text(
+                                        text = "cybercrime.gov.in & Emergency 1930",
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = TextSecondary
+                                    )
+                                }
+                            }
+                        }
+                        Spacer(modifier = Modifier.height(10.dp))
+                        Text(
+                            text = "Structure legal evidence drafts from detected incidents and track your official FIR / Acknowledgement status.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = TextSecondary
+                        )
+                        Spacer(modifier = Modifier.height(12.dp))
+                        Button(
+                            onClick = onNavigateToComplaints,
+                            colors = ButtonDefaults.buttonColors(containerColor = CyberCyan, contentColor = Color.Black),
+                            shape = RoundedCornerShape(8.dp),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Text("Open Complaint Assistant", fontWeight = FontWeight.Bold)
+                        }
+                    }
+                }
             }
 
             // Card 4: Recent Activity Header

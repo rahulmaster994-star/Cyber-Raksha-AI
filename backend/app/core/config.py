@@ -43,6 +43,18 @@ class Settings(BaseSettings):
     # Phase B2.1 & B3 Cryptographic Secrets
     # Pepper key for HMAC-based SMS threat hashing (immune to rainbow table attacks)
     SMS_PEPPER_KEY: str = os.getenv("CYBER_RAKSHA_SMS_PEPPER", "CYBER_RAKSHA_MOBILE_SMS_PEPPER_V2_1")
+    JWT_SECRET_KEY: str = os.getenv("CYBER_RAKSHA_JWT_SECRET", "cyber-raksha-jwt-secret-key-2026-production")
+    OTP_EXPIRY_MINUTES: int = 10
+    OTP_MAX_ATTEMPTS: int = 3
+
+    # SMTP Configuration for Email Notifications
+    SMTP_HOST: str = os.getenv("SMTP_HOST", "")
+    SMTP_PORT: int = int(os.getenv("SMTP_PORT", "587"))
+    SMTP_USERNAME: str = os.getenv("SMTP_USERNAME", "")
+    SMTP_PASSWORD: str = os.getenv("SMTP_PASSWORD", "")
+    SMTP_FROM_EMAIL: str = os.getenv("SMTP_FROM_EMAIL", "noreply@cyberraksha.ai")
+    SMTP_FROM_NAME: str = os.getenv("SMTP_FROM_NAME", "Cyber Raksha AI")
+    SMTP_USE_TLS: bool = os.getenv("SMTP_USE_TLS", "true").lower() in ("true", "1", "yes")
     
     # CORS Origins (supports both CORS_ORIGINS and ALLOWED_ORIGINS env vars)
     CORS_ORIGINS: str = "http://localhost:5173,http://127.0.0.1:5173,http://localhost:3000,http://127.0.0.1:3000"

@@ -27,6 +27,13 @@ class AppPreferences(private val context: Context) {
         val KEY_SMS_PROTECTION = booleanPreferencesKey("sms_protection_enabled")
         val KEY_CALL_PROTECTION = booleanPreferencesKey("call_protection_enabled")
         val KEY_WEB_PROTECTION = booleanPreferencesKey("web_protection_enabled")
+        val KEY_USER_TOKEN = stringPreferencesKey("user_token")
+        val KEY_USER_NAME = stringPreferencesKey("user_name")
+        val KEY_USER_EMAIL = stringPreferencesKey("user_email")
+        val KEY_USER_MOBILE = stringPreferencesKey("user_mobile")
+        val KEY_IS_MOBILE_VERIFIED = booleanPreferencesKey("is_mobile_verified")
+        val KEY_CONSENT_GIVEN = booleanPreferencesKey("consent_given")
+        val KEY_NOTIF_LISTENER_ENABLED = booleanPreferencesKey("notif_listener_enabled")
         const val DEFAULT_BACKEND_URL = "https://cyberraksha-backend.onrender.com"
     }
 
@@ -36,6 +43,16 @@ class AppPreferences(private val context: Context) {
         val stored = it[KEY_DEVICE_TOKEN]
         if (!stored.isNullOrBlank()) SecureTokenManager.decrypt(stored) else null 
     }
+    val userToken: Flow<String?> = context.dataStore.data.map {
+        val stored = it[KEY_USER_TOKEN]
+        if (!stored.isNullOrBlank()) SecureTokenManager.decrypt(stored) else null
+    }
+    val userName: Flow<String?> = context.dataStore.data.map { it[KEY_USER_NAME] }
+    val userEmail: Flow<String?> = context.dataStore.data.map { it[KEY_USER_EMAIL] }
+    val userMobile: Flow<String?> = context.dataStore.data.map { it[KEY_USER_MOBILE] }
+    val isMobileVerified: Flow<Boolean> = context.dataStore.data.map { it[KEY_IS_MOBILE_VERIFIED] ?: false }
+    val consentGiven: Flow<Boolean> = context.dataStore.data.map { it[KEY_CONSENT_GIVEN] ?: false }
+    val notifListenerEnabled: Flow<Boolean> = context.dataStore.data.map { it[KEY_NOTIF_LISTENER_ENABLED] ?: true }
     val onboardingComplete: Flow<Boolean> = context.dataStore.data.map { it[KEY_ONBOARDING_COMPLETE] ?: false }
     val backendUrl: Flow<String> = context.dataStore.data.map { 
         val stored = it[KEY_BACKEND_URL]?.trim()
@@ -67,5 +84,23 @@ class AppPreferences(private val context: Context) {
     suspend fun setSmsProtectionEnabled(enabled: Boolean) = context.dataStore.edit { it[KEY_SMS_PROTECTION] = enabled }
     suspend fun setCallProtectionEnabled(enabled: Boolean) = context.dataStore.edit { it[KEY_CALL_PROTECTION] = enabled }
     suspend fun setWebProtectionEnabled(enabled: Boolean) = context.dataStore.edit { it[KEY_WEB_PROTECTION] = enabled }
+    suspend fun setNotifListenerEnabled(enabled: Boolean) = context.dataStore.edit { it[KEY_NOTIF_LISTENER_ENABLED] = enabled }
+    suspend fun setConsentGiven(given: Boolean) = context.dataStore.edit { it[KEY_CONSENT_GIVEN] = given }
+    suspend fun saveUserToken(token: String) = context.dataStore.edit {
+        it[KEY_USER_TOKEN] = SecureTokenManager.encrypt(token)
+    }
+    suspend fun saveUserProfile(name: String, email: String, mobile: String?, isMobileVerified: Boolean) = context.dataStore.edit {
+        it[KEY_USER_NAME] = name
+        it[KEY_USER_EMAIL] = email
+        if (mobile != null) it[KEY_USER_MOBILE] = mobile
+        it[KEY_IS_MOBILE_VERIFIED] = isMobileVerified
+    }
+    suspend fun clearUserSession() = context.dataStore.edit {
+        it.remove(KEY_USER_TOKEN)
+        it.remove(KEY_USER_NAME)
+        it.remove(KEY_USER_EMAIL)
+        it.remove(KEY_USER_MOBILE)
+        it.remove(KEY_IS_MOBILE_VERIFIED)
+    }
 }
 

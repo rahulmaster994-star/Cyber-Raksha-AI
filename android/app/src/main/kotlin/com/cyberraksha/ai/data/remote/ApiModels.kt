@@ -116,3 +116,110 @@ data class DetailedHealthResponse(
     @SerializedName("components") val components: Map<String, DetailedHealthComponent>?
 )
 
+// ── Authentication & User Account ─────────────────────────────────────────────
+
+data class UserRegisterRequestDto(
+    @SerializedName("email")         val email: String,
+    @SerializedName("username")      val username: String,
+    @SerializedName("password")      val password: String,
+    @SerializedName("full_name")     val fullName: String?,
+    @SerializedName("mobile_number") val mobileNumber: String?,
+    @SerializedName("consent_given") val consentGiven: Boolean = true
+)
+
+data class UserLoginRequestDto(
+    @SerializedName("identifier") val identifier: String,
+    @SerializedName("password")   val password: String
+)
+
+data class TokenResponseDto(
+    @SerializedName("access_token")       val accessToken: String,
+    @SerializedName("token_type")         val tokenType: String = "bearer",
+    @SerializedName("user_id")            val userId: Int,
+    @SerializedName("username")           val username: String,
+    @SerializedName("email")              val email: String,
+    @SerializedName("mobile_number")      val mobileNumber: String?,
+    @SerializedName("is_mobile_verified") val isMobileVerified: Boolean,
+    @SerializedName("is_email_verified")  val isEmailVerified: Boolean,
+    @SerializedName("role")               val role: String
+)
+
+data class UserProfileResponseDto(
+    @SerializedName("id")                 val id: Int,
+    @SerializedName("username")           val username: String,
+    @SerializedName("email")              val email: String,
+    @SerializedName("full_name")          val fullName: String?,
+    @SerializedName("mobile_number")      val mobileNumber: String?,
+    @SerializedName("is_mobile_verified") val isMobileVerified: Boolean,
+    @SerializedName("is_email_verified")  val isEmailVerified: Boolean,
+    @SerializedName("consent_given")      val consentGiven: Boolean,
+    @SerializedName("role")               val role: String,
+    @SerializedName("created_at")         val createdAt: String
+)
+
+data class MobileOtpRequestDto(
+    @SerializedName("mobile_number") val mobileNumber: String
+)
+
+data class MobileOtpVerifyRequestDto(
+    @SerializedName("otp") val otp: String
+)
+
+// ── Cybercrime Complaints ─────────────────────────────────────────────────────
+
+data class ComplaintDraftRequestDto(
+    @SerializedName("complaint_category") val complaintCategory: String,
+    @SerializedName("suspect_identifier") val suspectIdentifier: String?,
+    @SerializedName("financial_loss_inr") val financialLossInr: Double = 0.0,
+    @SerializedName("description")        val description: String,
+    @SerializedName("evidence_summary")   val evidenceSummary: String? = null,
+    @SerializedName("evidence_json")      val evidenceJson: String? = null,
+    @SerializedName("device_id")          val deviceId: String? = null
+)
+
+data class RecordAckRequestDto(
+    @SerializedName("official_ack_number") val officialAckNumber: String,
+    @SerializedName("notes")               val notes: String? = null
+)
+
+data class ComplaintResponseDto(
+    @SerializedName("complaint_id")             val complaintId: String,
+    @SerializedName("user_id")                  val userId: Int?,
+    @SerializedName("device_id")                val deviceId: String?,
+    @SerializedName("complaint_category")       val complaintCategory: String,
+    @SerializedName("suspect_identifier")       val suspectIdentifier: String?,
+    @SerializedName("financial_loss_inr")       val financialLossInr: Double,
+    @SerializedName("description")              val description: String,
+    @SerializedName("evidence_summary")         val evidenceSummary: String?,
+    @SerializedName("official_portal_url")      val officialPortalUrl: String,
+    @SerializedName("helpline_number")          val helplineNumber: String,
+    @SerializedName("status")                   val status: String,
+    @SerializedName("official_ack_number")      val officialAckNumber: String?,
+    @SerializedName("official_submission_date") val officialSubmissionDate: String?,
+    @SerializedName("official_notes")           val officialNotes: String?,
+    @SerializedName("created_at")               val createdAt: String,
+    @SerializedName("tracking_instructions")    val trackingInstructions: String
+)
+
+// ── Community Threat Intelligence ─────────────────────────────────────────────
+
+data class CommunityReportRequestDto(
+    @SerializedName("indicator")      val indicator: String,
+    @SerializedName("indicator_type") val indicatorType: String,
+    @SerializedName("category")       val category: String,
+    @SerializedName("description")    val description: String?,
+    @SerializedName("severity")       val severity: String = "HIGH",
+    @SerializedName("device_id")      val deviceId: String? = null
+)
+
+data class CommunityReportResponseDto(
+    @SerializedName("indicator")        val indicator: String,
+    @SerializedName("indicator_type")   val indicatorType: String,
+    @SerializedName("category")         val category: String,
+    @SerializedName("total_reports")    val totalReports: Int,
+    @SerializedName("severity")         val severity: String,
+    @SerializedName("verified_status")  val verifiedStatus: String,
+    @SerializedName("status")           val status: String,
+    @SerializedName("message")          val message: String
+)
+

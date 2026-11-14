@@ -101,5 +101,63 @@ interface CyberRakshaApiService {
 
     @GET("api/v1/threat-intel/indicators")
     suspend fun getThreatIndicators(): Response<List<ThreatIndicatorDto>>
+
+    // ── Authentication & User Account ─────────────────────────────────────
+
+    @POST("api/v1/auth/register")
+    suspend fun registerUser(
+        @Body request: UserRegisterRequestDto
+    ): Response<TokenResponseDto>
+
+    @POST("api/v1/auth/login")
+    suspend fun loginUser(
+        @Body request: UserLoginRequestDto
+    ): Response<TokenResponseDto>
+
+    @POST("api/v1/auth/send-mobile-otp")
+    suspend fun sendMobileOtp(
+        @Header("Authorization") bearerToken: String,
+        @Body request: MobileOtpRequestDto
+    ): Response<Map<String, Any>>
+
+    @POST("api/v1/auth/verify-mobile-otp")
+    suspend fun verifyMobileOtp(
+        @Header("Authorization") bearerToken: String,
+        @Body request: MobileOtpVerifyRequestDto
+    ): Response<Map<String, Any>>
+
+    @GET("api/v1/auth/me")
+    suspend fun getUserProfile(
+        @Header("Authorization") bearerToken: String
+    ): Response<UserProfileResponseDto>
+
+    // ── Cybercrime Complaints ─────────────────────────────────────────────
+
+    @POST("api/v1/complaints/draft")
+    suspend fun createComplaintDraft(
+        @Header("Authorization") bearerToken: String?,
+        @Body request: ComplaintDraftRequestDto
+    ): Response<ComplaintResponseDto>
+
+    @POST("api/v1/complaints/{complaintId}/ack")
+    suspend fun recordOfficialAck(
+        @Header("Authorization") bearerToken: String?,
+        @Path("complaintId") complaintId: String,
+        @Body request: RecordAckRequestDto
+    ): Response<ComplaintResponseDto>
+
+    @GET("api/v1/complaints")
+    suspend fun listComplaints(
+        @Header("Authorization") bearerToken: String?,
+        @Query("device_id") deviceId: String? = null
+    ): Response<List<ComplaintResponseDto>>
+
+    // ── Community Threat Reporting ────────────────────────────────────────
+
+    @POST("api/v1/community/report")
+    suspend fun submitCommunityReport(
+        @Header("Authorization") bearerToken: String?,
+        @Body request: CommunityReportRequestDto
+    ): Response<CommunityReportResponseDto>
 }
 

@@ -9,6 +9,8 @@ from app.models.feedback import AnalysisFeedback
 from app.models.device import Device
 from app.models.phone_reputation import PhoneReputation
 from app.models.sms_analysis import SmsAnalysis
+from app.models.complaint import CybercrimeComplaint
+from app.models.community_report import CommunityReport
 
 __all__ = [
     "User",
@@ -27,4 +29,6 @@ __all__ = [
     "Device",
     "PhoneReputation",
     "SmsAnalysis",
+    "CybercrimeComplaint",
+    "CommunityReport",
 ]

@@ -17,6 +17,8 @@ import com.cyberraksha.ai.domain.usecase.AnalyzeMessageUseCase
 import com.cyberraksha.ai.domain.usecase.CheckNumberUseCase
 import com.cyberraksha.ai.domain.usecase.ReportThreatUseCase
 import com.cyberraksha.ai.ui.alerts.AlertsScreen
+import com.cyberraksha.ai.ui.auth.AuthScreen
+import com.cyberraksha.ai.ui.complaints.ComplaintAssistantScreen
 import com.cyberraksha.ai.ui.call_protection.CallProtectionScreen
 import com.cyberraksha.ai.ui.call_protection.CallProtectionViewModel
 import com.cyberraksha.ai.ui.dashboard.DashboardScreen
@@ -28,6 +30,7 @@ import com.cyberraksha.ai.ui.threat_history.ThreatHistoryScreen
 import com.cyberraksha.ai.ui.threat_history.ThreatHistoryViewModel
 
 object Routes {
+    const val AUTH             = "auth"
     const val ONBOARDING       = "onboarding"
     const val DASHBOARD        = "dashboard"
     const val ALERTS           = "alerts"
@@ -35,12 +38,14 @@ object Routes {
     const val SMS_PROTECTION   = "sms_protection"
     const val CALL_PROTECTION  = "call_protection"
     const val THREAT_HISTORY   = "threat_history"
+    const val COMPLAINTS       = "complaints"
 }
 
 @Composable
 fun CyberRakshaNavHost(prefs: AppPreferences) {
     val navController           = rememberNavController()
     val onboardingComplete by prefs.onboardingComplete.collectAsState(initial = false)
+    val userToken by prefs.userToken.collectAsState(initial = null)
     val context                 = LocalContext.current
 
     val db = remember {
@@ -65,9 +70,24 @@ fun CyberRakshaNavHost(prefs: AppPreferences) {
     val checkNumberUseCase    = remember(mobileRepository) { CheckNumberUseCase(mobileRepository) }
     val reportThreatUseCase   = remember(mobileRepository) { ReportThreatUseCase(mobileRepository) }
 
-    val start = if (onboardingComplete) Routes.DASHBOARD else Routes.ONBOARDING
+    val start = when {
+        userToken.isNullOrBlank() -> Routes.AUTH
+        !onboardingComplete -> Routes.ONBOARDING
+        else -> Routes.DASHBOARD
+    }
 
     NavHost(navController = navController, startDestination = start) {
+        composable(Routes.AUTH) {
+            AuthScreen(
+                prefs = prefs,
+                onAuthSuccess = {
+                    val next = if (onboardingComplete) Routes.DASHBOARD else Routes.ONBOARDING
+                    navController.navigate(next) {
+                        popUpTo(Routes.AUTH) { inclusive = true }
+                    }
+                }
+            )
+        }
         composable(Routes.ONBOARDING) {
             OnboardingScreen(
                 prefs = prefs,
@@ -85,7 +105,14 @@ fun CyberRakshaNavHost(prefs: AppPreferences) {
                 onNavigateToSettings       = { navController.navigate(Routes.SETTINGS) },
                 onNavigateToSmsProtection  = { navController.navigate(Routes.SMS_PROTECTION) },
                 onNavigateToCallProtection = { navController.navigate(Routes.CALL_PROTECTION) },
-                onNavigateToThreatHistory  = { navController.navigate(Routes.THREAT_HISTORY) }
+                onNavigateToThreatHistory  = { navController.navigate(Routes.THREAT_HISTORY) },
+                onNavigateToComplaints     = { navController.navigate(Routes.COMPLAINTS) }
+            )
+        }
+        composable(Routes.COMPLAINTS) {
+            ComplaintAssistantScreen(
+                prefs = prefs,
+                onBack = { navController.popBackStack() }
             )
         }
         composable(Routes.ALERTS) {

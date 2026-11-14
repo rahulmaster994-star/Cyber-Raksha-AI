@@ -9,12 +9,7 @@ from sqlalchemy.orm import sessionmaker
 from app.main import app
 from app.database.base import Base
 from app.database.session import get_db, init_db
-from app.models.user import User
-from app.models.system_config import SystemConfig
-from app.models.security_event import SecurityEvent
-from app.models.analysis_history import AnalysisHistory
-from app.models.notification import Notification, NotificationPreference
-from app.models.device import Device
+from app import models  # Ensures all models are registered in Base.metadata
 
 # Use a persistent test SQLite database file for the test session
 TEST_DATABASE_URL = "sqlite:///./test_cyber_raksha.db"

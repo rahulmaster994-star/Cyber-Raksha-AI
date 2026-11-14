@@ -38,15 +38,21 @@ def init_db() -> None:
     Initializes database schema. Automatically creates all tables
     registered with the Base metadata and runs safe incremental column migrations for SQLite.
     """
-    # Import models to ensure they are registered with Base metadata
+    # Import all models to ensure they are registered with Base metadata
+    from app import models  # noqa: F401
     from app.models.user import User
     from app.models.system_config import SystemConfig
     from app.models.security_event import SecurityEvent
     from app.models.analysis_history import AnalysisHistory
     from app.models.notification import Notification, NotificationPreference
+    from app.models.threat_intel import ThreatIndicator, ThreatFeedLog, UnifiedRiskRecord
+    from app.models.incident import SecurityIncident, IncidentAction, UserProtectionSetting
+    from app.models.feedback import AnalysisFeedback
     from app.models.device import Device
     from app.models.phone_reputation import PhoneReputation
     from app.models.sms_analysis import SmsAnalysis
+    from app.models.complaint import CybercrimeComplaint
+    from app.models.community_report import CommunityReport
 
     Base.metadata.create_all(bind=engine)
 
@@ -56,6 +62,25 @@ def init_db() -> None:
 
     try:
         with engine.connect() as conn:
+            # Users migration
+            user_info = conn.execute(text("PRAGMA table_info(users)")).fetchall()
+            user_cols = {col[1] for col in user_info}
+            if user_cols:
+                new_user_cols = [
+                    ("mobile_number", "VARCHAR(20)"),
+                    ("is_mobile_verified", "BOOLEAN DEFAULT 0"),
+                    ("is_email_verified", "BOOLEAN DEFAULT 0"),
+                    ("email_verification_token", "VARCHAR(255)"),
+                    ("email_token_expires_at", "DATETIME"),
+                    ("mobile_otp", "VARCHAR(10)"),
+                    ("mobile_otp_expires_at", "DATETIME"),
+                    ("mobile_otp_attempts", "INTEGER DEFAULT 0"),
+                    ("consent_given", "BOOLEAN DEFAULT 0"),
+                    ("consent_timestamp", "DATETIME"),
+                ]
+                for col_name, col_def in new_user_cols:
+                    if col_name not in user_cols:
+                        conn.execute(text(f"ALTER TABLE users ADD COLUMN {col_name} {col_def}"))
             # Notifications migration
             table_info = conn.execute(text("PRAGMA table_info(notifications)")).fetchall()
             existing_cols = {col[1] for col in table_info}
