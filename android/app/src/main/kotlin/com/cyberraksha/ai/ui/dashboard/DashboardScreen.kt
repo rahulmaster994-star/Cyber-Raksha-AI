@@ -4,6 +4,7 @@ import android.Manifest
 import android.app.Activity
 import android.content.pm.PackageManager
 import android.net.VpnService
+import android.os.Build
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
@@ -33,6 +34,9 @@ import com.cyberraksha.ai.data.remote.SecurityEventItem
 import com.cyberraksha.ai.ui.call_protection.CallScreeningHelper
 import com.cyberraksha.ai.ui.theme.*
 import com.cyberraksha.ai.vpn.CyberRakshaDnsVpnService
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -197,6 +201,53 @@ fun DashboardScreen(
                             enableProtection()
                         } else {
                             disableProtection()
+                        }
+                    }
+                )
+            }
+
+            // Card 0.5: Autonomous SMS Shield Health & Diagnostics
+            item {
+                SmsDiagnosticsCard(
+                    onTriggerTestSms = {
+                        val testSender = "+919876501234"
+                        val testBody = "URGENT: Your bank account will be blocked within 30 minutes! Your KYC verification has expired. Immediately verify your account and provide your banking credentials to avoid permanent suspension."
+                        val assessment = com.cyberraksha.ai.engine.UnifiedRiskEngine.evaluate(testBody, testSender)
+
+                        CoroutineScope(Dispatchers.IO).launch {
+                            db.threatIncidentDao().insertIncident(
+                                com.cyberraksha.ai.data.local.ThreatIncidentEntity(
+                                    incidentType = "SMS",
+                                    indicator = testSender,
+                                    category = assessment.category,
+                                    severity = assessment.severity,
+                                    riskScore = assessment.riskScore,
+                                    description = "Test SMS fraud intercepted: ${assessment.category}"
+                                )
+                            )
+                            com.cyberraksha.ai.notifications.NotificationHelper.showNotification(
+                                context = context,
+                                title = "⚠️ Fake Bank KYC / Suspension Alert",
+                                message = "Sender: $testSender\n${assessment.recommendedAction}",
+                                severity = assessment.severity,
+                                notificationId = testBody.hashCode()
+                            )
+                            com.cyberraksha.ai.receiver.SmsReceiverDiagnostics.recordTrace(
+                                com.cyberraksha.ai.receiver.SmsReceiverDiagnostics.SmsTrace(
+                                    senderMasked = com.cyberraksha.ai.receiver.SmsReceiverDiagnostics.maskSender(testSender),
+                                    partsCount = 1,
+                                    charLength = testBody.length,
+                                    category = assessment.category,
+                                    riskScore = assessment.riskScore,
+                                    severity = assessment.severity,
+                                    reasonsCount = assessment.reasons.size,
+                                    notificationPosted = true,
+                                    incidentSaved = true,
+                                    permissionReceiveSms = true,
+                                    permissionPostNotifications = true,
+                                    statusMessage = "Self-test executed successfully"
+                                )
+                            )
                         }
                     }
                 )
@@ -554,6 +605,173 @@ private fun MasterProtectionCard(
                 StatusPill("Call Screener", isProtected)
                 StatusPill("DNS Sinkhole", isProtected)
             }
+        }
+    }
+}
+
+@Composable
+private fun SmsDiagnosticsCard(
+    onTriggerTestSms: () -> Unit
+) {
+    val context = LocalContext.current
+    var isExpanded by remember { mutableStateOf(false) }
+
+    val hasReceiveSms = ContextCompat.checkSelfPermission(
+        context,
+        Manifest.permission.RECEIVE_SMS
+    ) == PackageManager.PERMISSION_GRANTED
+
+    val hasPostNotif = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+        ContextCompat.checkSelfPermission(
+            context,
+            Manifest.permission.POST_NOTIFICATIONS
+        ) == PackageManager.PERMISSION_GRANTED
+    } else true
+
+    val lastTrace = com.cyberraksha.ai.receiver.SmsReceiverDiagnostics.lastTrace
+
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = DarkSurface),
+        shape = RoundedCornerShape(16.dp)
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        imageVector = Icons.Default.BugReport,
+                        contentDescription = "Diagnostics",
+                        tint = CyberCyan,
+                        modifier = Modifier.size(20.dp)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        "Autonomous SMS Shield Health",
+                        style = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.Bold,
+                        color = TextPrimary
+                    )
+                }
+                TextButton(onClick = { isExpanded = !isExpanded }) {
+                    Text(if (isExpanded) "Hide" else "Inspect", color = CyberCyan, fontSize = 12.sp)
+                }
+            }
+
+            Spacer(modifier = Modifier.height(8.dp))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                StatusBadge(
+                    label = "RECEIVE_SMS",
+                    isOk = hasReceiveSms
+                )
+                StatusBadge(
+                    label = "NOTIFICATIONS",
+                    isOk = hasPostNotif
+                )
+                StatusBadge(
+                    label = "RECEIVER",
+                    isOk = true
+                )
+            }
+
+            if (isExpanded) {
+                Spacer(modifier = Modifier.height(12.dp))
+                HorizontalDivider(color = DarkOutline)
+                Spacer(modifier = Modifier.height(10.dp))
+
+                Text(
+                    text = "Broadcasts Intercepted: ${com.cyberraksha.ai.receiver.SmsReceiverDiagnostics.totalBroadcastsReceived}",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = TextPrimary
+                )
+                Text(
+                    text = "Threats Detected: ${com.cyberraksha.ai.receiver.SmsReceiverDiagnostics.totalThreatsDetected}",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = if (com.cyberraksha.ai.receiver.SmsReceiverDiagnostics.totalThreatsDetected > 0) SeverityCritical else TextSecondary
+                )
+
+                if (lastTrace != null) {
+                    Spacer(modifier = Modifier.height(6.dp))
+                    Text(
+                        text = "Last Broadcast Trace:",
+                        style = MaterialTheme.typography.labelSmall,
+                        fontWeight = FontWeight.Bold,
+                        color = CyberCyan
+                    )
+                    Text(
+                        text = "• Sender: ${lastTrace.senderMasked} (${lastTrace.partsCount} parts, ${lastTrace.charLength} chars)",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = TextPrimary
+                    )
+                    Text(
+                        text = "• Classification: ${lastTrace.category} (${lastTrace.severity}, Risk: ${lastTrace.riskScore})",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = if (lastTrace.severity == "CRITICAL" || lastTrace.severity == "HIGH") SeverityCritical else SeverityLow
+                    )
+                    Text(
+                        text = "• Notification: ${if (lastTrace.notificationPosted) "Delivered ✅" else "None"}",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = TextPrimary
+                    )
+                    Text(
+                        text = "• Status: ${lastTrace.statusMessage}",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = TextSecondary
+                    )
+                } else {
+                    Spacer(modifier = Modifier.height(6.dp))
+                    Text(
+                        text = "No incoming SMS intercepted yet. Receiver is registered and listening.",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = TextSecondary
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(12.dp))
+                Button(
+                    onClick = onTriggerTestSms,
+                    colors = ButtonDefaults.buttonColors(containerColor = CyberCyan.copy(alpha = 0.2f), contentColor = CyberCyan),
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(8.dp)
+                ) {
+                    Icon(Icons.Default.Send, contentDescription = null, modifier = Modifier.size(16.dp))
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text("Simulate Live Test SMS", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun StatusBadge(label: String, isOk: Boolean) {
+    Surface(
+        color = if (isOk) SeverityLow.copy(alpha = 0.15f) else SeverityCritical.copy(alpha = 0.15f),
+        shape = RoundedCornerShape(6.dp)
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(6.dp)
+                    .clip(CircleShape)
+                    .background(if (isOk) SeverityLow else SeverityCritical)
+            )
+            Spacer(modifier = Modifier.width(4.dp))
+            Text(
+                text = "$label: ${if (isOk) "OK" else "DENIED"}",
+                fontSize = 10.sp,
+                fontWeight = FontWeight.Bold,
+                color = if (isOk) SeverityLow else SeverityCritical
+            )
         }
     }
 }

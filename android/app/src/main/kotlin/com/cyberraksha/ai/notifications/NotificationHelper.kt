@@ -7,6 +7,7 @@ import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
+import android.util.Log
 import androidx.core.app.ActivityCompat
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
@@ -15,44 +16,43 @@ import android.R as AndroidR
 
 object NotificationHelper {
 
+    private const val TAG = "NotificationHelper"
     const val CHANNEL_CRITICAL = "cyber_raksha_critical"
     const val CHANNEL_HIGH     = "cyber_raksha_high"
     const val CHANNEL_GENERAL  = "cyber_raksha_general"
 
     fun createChannels(context: Context) {
-        val manager = context.getSystemService(Context.NOTIFICATION_SERVICE)
-                as NotificationManager
+        val manager = context.getSystemService(Context.NOTIFICATION_SERVICE) as? NotificationManager ?: return
 
-        manager.createNotificationChannel(
-            NotificationChannel(
-                CHANNEL_CRITICAL,
-                "Critical Threats",
-                NotificationManager.IMPORTANCE_HIGH
-            ).apply {
-                description = "Critical security threats requiring immediate attention"
-                enableVibration(true)
-            }
-        )
+        val criticalChannel = NotificationChannel(
+            CHANNEL_CRITICAL,
+            "Critical Security Threats",
+            NotificationManager.IMPORTANCE_HIGH
+        ).apply {
+            description = "High-priority critical alerts for financial fraud, OTP theft, and digital arrest threats"
+            enableVibration(true)
+            setShowBadge(true)
+        }
 
-        manager.createNotificationChannel(
-            NotificationChannel(
-                CHANNEL_HIGH,
-                "High Priority Alerts",
-                NotificationManager.IMPORTANCE_DEFAULT
-            ).apply {
-                description = "High priority security alerts"
-            }
-        )
+        val highChannel = NotificationChannel(
+            CHANNEL_HIGH,
+            "High Priority Alerts",
+            NotificationManager.IMPORTANCE_HIGH
+        ).apply {
+            description = "Important security warnings and suspicious activity alerts"
+            enableVibration(true)
+            setShowBadge(true)
+        }
 
-        manager.createNotificationChannel(
-            NotificationChannel(
-                CHANNEL_GENERAL,
-                "Security Notifications",
-                NotificationManager.IMPORTANCE_LOW
-            ).apply {
-                description = "General security notifications and updates"
-            }
-        )
+        val generalChannel = NotificationChannel(
+            CHANNEL_GENERAL,
+            "Security Status & Diagnostics",
+            NotificationManager.IMPORTANCE_DEFAULT
+        ).apply {
+            description = "General security updates and status sync notifications"
+        }
+
+        manager.createNotificationChannels(listOf(criticalChannel, highChannel, generalChannel))
     }
 
     fun showNotification(
@@ -61,14 +61,21 @@ object NotificationHelper {
         message: String,
         severity: String,
         notificationId: Int
-    ) {
+    ): Boolean {
+        // Ensure channels are created even if invoked before MainActivity launches
+        createChannels(context)
+
         // Android 13+: check POST_NOTIFICATIONS permission
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            if (ActivityCompat.checkSelfPermission(
-                    context,
-                    android.Manifest.permission.POST_NOTIFICATIONS
-                ) != PackageManager.PERMISSION_GRANTED
-            ) return
+            val hasPermission = ActivityCompat.checkSelfPermission(
+                context,
+                android.Manifest.permission.POST_NOTIFICATIONS
+            ) == PackageManager.PERMISSION_GRANTED
+
+            if (!hasPermission) {
+                Log.w(TAG, "POST_NOTIFICATIONS permission NOT granted. Notification cannot be displayed.")
+                return false
+            }
         }
 
         val channel = when (severity.uppercase()) {
@@ -97,11 +104,18 @@ object NotificationHelper {
                     else       -> NotificationCompat.PRIORITY_DEFAULT
                 }
             )
+            .setDefaults(NotificationCompat.DEFAULT_ALL)
             .setContentIntent(pendingIntent)
             .setAutoCancel(true)
             .build()
 
-        NotificationManagerCompat.from(context).notify(notificationId, notification)
+        return try {
+            NotificationManagerCompat.from(context).notify(notificationId, notification)
+            Log.i(TAG, "Notification successfully posted: id=$notificationId, title='$title'")
+            true
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to post notification id=$notificationId", e)
+            false
+        }
     }
 }
-

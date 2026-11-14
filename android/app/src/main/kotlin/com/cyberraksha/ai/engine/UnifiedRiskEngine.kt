@@ -17,17 +17,19 @@ object UnifiedRiskEngine {
     private val PATTERNS = mapOf(
         "GOV_IMPERSONATION" to listOf(
             Regex("""\bdigital\s+arrest\b""", RegexOption.IGNORE_CASE),
-            Regex("""\bcbi\s+(?:notice|order|department|officer|summons)\b""", RegexOption.IGNORE_CASE),
-            Regex("""\bpolice\s+(?:warrant|arrest|summons|fir|custody)\b""", RegexOption.IGNORE_CASE),
+            Regex("""\bcbi\s+(?:notice|order|department|officer|summons|investigation)\b""", RegexOption.IGNORE_CASE),
+            Regex("""\bpolice\s+(?:warrant|arrest|summons|fir|custody|investigation)\b""", RegexOption.IGNORE_CASE),
             Regex("""\bnarcotics\s+(?:control|bureau|drugs|parcel|seizure)\b""", RegexOption.IGNORE_CASE),
             Regex("""\bcustoms\s+(?:seizure|confiscation|held|parcel|illegal)\b""", RegexOption.IGNORE_CASE),
-            Regex("""\bcyber\s+crime\s+(?:branch|police|department|complaint)\b""", RegexOption.IGNORE_CASE),
+            Regex("""\bcyber\s+crime\s+(?:branch|police|department|complaint|cell)\b""", RegexOption.IGNORE_CASE),
             Regex("""\bcourt\s+summons\b""", RegexOption.IGNORE_CASE),
-            Regex("""\bed\s+(?:raid|notice|inquiry|investigation)\b""", RegexOption.IGNORE_CASE)
+            Regex("""\bed\s+(?:raid|notice|inquiry|investigation)\b""", RegexOption.IGNORE_CASE),
+            Regex("""\b(?:arrest\s+warrant|money\s+laundering|skype\s+hearing|digital\s+hearing)\b""", RegexOption.IGNORE_CASE)
         ),
         "OTP_THEFT" to listOf(
-            Regex("""\bshare\s+(?:your\s+)?otp\b""", RegexOption.IGNORE_CASE),
-            Regex("""\botp\s+(?:for|to)\s+(?:verification|receive|refund|claim|activation)\b""", RegexOption.IGNORE_CASE),
+            Regex("""\bshare\s+(?:your\s+)?(?:otp|one\s+time\s+password|pin)\b""", RegexOption.IGNORE_CASE),
+            Regex("""\b(?:asking|demanding|requesting)\s+(?:for\s+)?(?:the\s+|your\s+)?otp\b""", RegexOption.IGNORE_CASE),
+            Regex("""\botp\s+(?:for|to)\s+(?:verification|receive|refund|claim|activation|verify)\b""", RegexOption.IGNORE_CASE),
             Regex("""\btell\s+(?:me\s+)?(?:the\s+)?(?:otp|6\s*digit\s*code|pin)\b""", RegexOption.IGNORE_CASE),
             Regex("""\bsend\s+(?:back\s+)?otp\b""", RegexOption.IGNORE_CASE),
             Regex("""\bforward\s+(?:this\s+)?(?:otp|sms)\b""", RegexOption.IGNORE_CASE),
@@ -43,12 +45,16 @@ object UnifiedRiskEngine {
             Regex("""\brefund\s+(?:of\s+rs\.?|credited|approved)\b""", RegexOption.IGNORE_CASE)
         ),
         "BANKING_FRAUD" to listOf(
-            Regex("""\b(?:account|debit\s*card|credit\s*card|atm)\s+(?:is|has\s+been|was)?\s*(?:blocked|suspended|deactivated|frozen)\b""", RegexOption.IGNORE_CASE),
-            Regex("""\b(?:update|verify|link)\s+(?:your\s+)?(?:pan|aadhaar|kyc)\b""", RegexOption.IGNORE_CASE),
-            Regex("""\bkyc\s+(?:is\s+)?(?:pending|expired|suspended|required)\b""", RegexOption.IGNORE_CASE),
-            Regex("""\bunauthorized\s+(?:transaction|login|debit)\b""", RegexOption.IGNORE_CASE),
-            Regex("""\bnet\s*banking\s+(?:access\s+)?(?:suspended|blocked)\b""", RegexOption.IGNORE_CASE),
-            Regex("""\b(?:sbi|hdfc|icici|axis|pnb|bob|kotak|canara)\s*(?:bank)?\s*(?:account|yono|netbanking)?\s*(?:is|has\s+been)?\s*(?:blocked|alert|kyc)\b""", RegexOption.IGNORE_CASE)
+            // Account blocking/suspension threats with flexible tense ("will be blocked", "has been blocked", "to avoid permanent suspension")
+            Regex("""\b(?:bank\s+)?account\s+(?:will\s+be|is|has\s+been|was|to\s+be|going\s+to\s+be)?\s*(?:temporarily\s+|permanently\s+)?(?:blocked|suspended|deactivated|frozen|closed)\b""", RegexOption.IGNORE_CASE),
+            Regex("""\bkyc\s+(?:verification\s+|details\s+)?(?:is|has|status)?\s*(?:been\s+)?(?:pending|expired|suspended|required|failed|incomplete)\b""", RegexOption.IGNORE_CASE),
+            Regex("""\b(?:provide|enter|submit|share|update)\s+(?:your\s+)?(?:banking\s+|login\s+|account\s+)?credentials\b""", RegexOption.IGNORE_CASE),
+            Regex("""\b(?:avoid|prevent)\s+(?:permanent\s+|account\s+)?(?:suspension|deactivation|blocking|closure)\b""", RegexOption.IGNORE_CASE),
+            Regex("""\b(?:immediately\s+verify|verify\s+(?:your\s+)?(?:bank\s+)?account)\b""", RegexOption.IGNORE_CASE),
+            Regex("""\b(?:update|verify|link|validate)\s+(?:your\s+)?(?:pan|aadhaar|kyc)\b""", RegexOption.IGNORE_CASE),
+            Regex("""\bnet\s*banking\s+(?:access\s+)?(?:suspended|blocked|expired)\b""", RegexOption.IGNORE_CASE),
+            Regex("""\bunauthorized\s+(?:transaction|login|debit|access)\b""", RegexOption.IGNORE_CASE),
+            Regex("""\b(?:sbi|hdfc|icici|axis|pnb|bob|kotak|canara|union\s*bank|bank\s*of\s*baroda)\s*(?:bank)?\s*(?:account|yono|netbanking)?\s*(?:is|has\s+been|will\s+be)?\s*(?:blocked|alert|kyc|suspended)\b""", RegexOption.IGNORE_CASE)
         ),
         "DELIVERY_SCAM" to listOf(
             Regex("""\b(?:parcel|package|courier|shipment)\s+(?:is\s+)?(?:on\s+hold|held|undelivered|delayed)\b""", RegexOption.IGNORE_CASE),
@@ -113,31 +119,62 @@ object UnifiedRiskEngine {
 
         // 1. Evaluate known fraud signatures
         for ((category, regexList) in PATTERNS) {
+            val textToEvaluate = if (category == "OTP_THEFT") {
+                trimmed.replace(
+                    Regex("""\b(?:do\s+not|never|don't|dont)\s+share\s+(?:your\s+)?(?:otp|pin|password)\s*(?:with\s+anyone)?\b""", RegexOption.IGNORE_CASE),
+                    ""
+                )
+            } else {
+                trimmed
+            }
+
             for (regex in regexList) {
-                if (regex.containsMatchIn(trimmed)) {
+                if (regex.containsMatchIn(textToEvaluate)) {
                     val score = when (category) {
                         "GOV_IMPERSONATION" -> 98.0f
-                        "OTP_THEFT" -> 95.0f
-                        "UPI_FRAUD" -> 92.0f
-                        "BANKING_FRAUD" -> 94.0f
-                        "LOTTERY_SCAM" -> 85.0f
-                        "DELIVERY_SCAM" -> 88.0f
-                        "LOAN_SCAM" -> 80.0f
-                        "INVESTMENT_FRAUD" -> 82.0f
-                        "JOB_SCAM" -> 78.0f
-                        else -> 70.0f
+                        "OTP_THEFT"          -> 95.0f
+                        "UPI_FRAUD"          -> 92.0f
+                        "BANKING_FRAUD"      -> 94.0f
+                        "LOTTERY_SCAM"        -> 85.0f
+                        "DELIVERY_SCAM"       -> 88.0f
+                        "LOAN_SCAM"           -> 80.0f
+                        "INVESTMENT_FRAUD"    -> 82.0f
+                        "JOB_SCAM"            -> 78.0f
+                        else                  -> 70.0f
                     }
                     if (score > maxScore) {
                         maxScore = score
                         detectedCategory = category
-                        reasons.add("Detected high-risk signature matching $category: '${regex.pattern}'")
+                        reasons.add("Detected high-risk signature matching $category: '${regex.find(trimmed)?.value ?: regex.pattern}'")
                     }
                     break
                 }
             }
         }
 
-        // 2. Evaluate URL threat heuristics if any URLs exist
+        // 2. High-Pressure Urgency Boost
+        val urgencyRegex = Regex(
+            """\b(?:urgent|immediately|action\s+required|within\s+\d+\s*(?:minutes?|hours?|mins?|hrs?)|within\s+24\s*hours?)\b""",
+            RegexOption.IGNORE_CASE
+        )
+        val urgencyMatch = urgencyRegex.find(trimmed)
+        if (urgencyMatch != null && detectedCategory != "BENIGN") {
+            maxScore = (maxScore + 4.0f).coerceAtMost(100.0f)
+            reasons.add("High-pressure urgency markers detected ('${urgencyMatch.value}') attempting to induce panic action.")
+        }
+
+        // 3. Credential Harvesting Boost
+        val credentialRegex = Regex(
+            """\b(?:banking\s+credentials|login\s+credentials|passwords?|credentials|netbanking\s+pin)\b""",
+            RegexOption.IGNORE_CASE
+        )
+        val credMatch = credentialRegex.find(trimmed)
+        if (credMatch != null && detectedCategory != "BENIGN") {
+            maxScore = (maxScore + 4.0f).coerceAtMost(100.0f)
+            reasons.add("Credential harvesting attempt targeting sensitive banking authentication credentials.")
+        }
+
+        // 4. Evaluate URL threat heuristics if any URLs exist
         if (extractedUrls.isNotEmpty()) {
             for (url in extractedUrls) {
                 val lower = url.lowercase()
@@ -157,16 +194,16 @@ object UnifiedRiskEngine {
             }
         }
 
-        // 3. Sender evaluation (suspicious 10-digit mobile numbers sending banking alerts)
+        // 5. Sender evaluation (suspicious 10-digit mobile numbers sending banking alerts)
         if (sender != null) {
             val cleanSender = sender.replace(Regex("""[^0-9]"""), "")
             if (cleanSender.length == 10 && (detectedCategory == "BANKING_FRAUD" || detectedCategory == "OTP_THEFT")) {
-                maxScore = (maxScore + 10.0f).coerceAtMost(100.0f)
+                maxScore = (maxScore + 5.0f).coerceAtMost(100.0f)
                 reasons.add("Institutional alert originated from personal 10-digit number ($sender) instead of authorized bank sender ID.")
             }
         }
 
-        // 4. Map final severity and recommendations
+        // 6. Map final severity and recommendations
         val severity = when {
             maxScore >= 90.0f -> "CRITICAL"
             maxScore >= 70.0f -> "HIGH"
@@ -176,9 +213,9 @@ object UnifiedRiskEngine {
 
         val recommendedAction = when (severity) {
             "CRITICAL" -> "URGENT: Do not click any links, send money, or share OTPs. This message contains verified fraud signatures."
-            "HIGH" -> "WARNING: Highly suspicious message. Verify directly through official customer support."
-            "MEDIUM" -> "Caution advised: Unverified sender or unconfirmed offer."
-            else -> "Message appears safe. No known threat signatures detected."
+            "HIGH"     -> "WARNING: Highly suspicious message. Verify directly through official customer support."
+            "MEDIUM"   -> "Caution advised: Unverified sender or unconfirmed offer."
+            else       -> "Message appears safe. No known threat signatures detected."
         }
 
         return RiskAssessment(
@@ -191,4 +228,3 @@ object UnifiedRiskEngine {
         )
     }
 }
-

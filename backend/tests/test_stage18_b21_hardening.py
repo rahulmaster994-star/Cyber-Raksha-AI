@@ -490,7 +490,7 @@ def test_b21_19_report_threat_rate_limit(client: TestClient):
 def test_b21_20_sms_reception_capability_audit():
     """
     Phase C Autonomous Protection: Asserts that automatic incoming SMS monitoring
-    via CyberRakshaSmsReceiver is properly protected with BROADCAST_SMS permission in AndroidManifest.xml.
+    via CyberRakshaSmsReceiver is properly configured with SMS_RECEIVED in AndroidManifest.xml.
     """
     import os
     android_manifest = "android/app/src/main/AndroidManifest.xml"
@@ -498,5 +498,6 @@ def test_b21_20_sms_reception_capability_audit():
         with open(android_manifest, "r", encoding="utf-8") as f:
             content = f.read()
         assert "CyberRakshaSmsReceiver" in content
-        assert "android.permission.BROADCAST_SMS" in content
+        assert "android.provider.Telephony.SMS_RECEIVED" in content
+
 

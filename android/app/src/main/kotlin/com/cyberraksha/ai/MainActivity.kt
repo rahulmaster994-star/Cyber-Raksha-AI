@@ -28,9 +28,21 @@ import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
 
-    private val requestNotificationPermissionLauncher =
-        registerForActivityResult(ActivityResultContracts.RequestPermission()) { isGranted ->
-            // Permission result handled; notifications will be posted if granted
+    private val requestCorePermissionsLauncher =
+        registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { results ->
+            val smsGranted = results[Manifest.permission.RECEIVE_SMS] == true
+            val notifGranted = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                results[Manifest.permission.POST_NOTIFICATIONS] == true
+            } else true
+            android.util.Log.i("MainActivity", "Core permissions updated -> RECEIVE_SMS=$smsGranted, POST_NOTIFICATIONS=$notifGranted")
+
+            if (smsGranted) {
+                lifecycleScope.launch {
+                    val prefs = AppPreferences(applicationContext)
+                    prefs.setAutonomousProtectionEnabled(true)
+                    prefs.setSmsProtectionEnabled(true)
+                }
+            }
         }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -50,8 +62,8 @@ class MainActivity : ComponentActivity() {
         // Initialize Android notification channels
         NotificationHelper.createChannels(applicationContext)
 
-        // Request POST_NOTIFICATIONS permission on Android 13+ (API 33+)
-        checkAndRequestNotificationPermission()
+        // Request Core Security Permissions (SMS Interception + Notifications)
+        checkAndRequestCorePermissions()
 
         // Schedule periodic background WorkManager sync
         SyncScheduler.schedule(applicationContext)
@@ -70,6 +82,26 @@ class MainActivity : ComponentActivity() {
         super.onNewIntent(intent)
         setIntent(intent)
         handleIncomingShareIntent(intent)
+    }
+
+    private fun checkAndRequestCorePermissions() {
+        val permissionsToRequest = mutableListOf<String>()
+
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.RECEIVE_SMS) != PackageManager.PERMISSION_GRANTED) {
+            permissionsToRequest.add(Manifest.permission.RECEIVE_SMS)
+        }
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_SMS) != PackageManager.PERMISSION_GRANTED) {
+            permissionsToRequest.add(Manifest.permission.READ_SMS)
+        }
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            if (ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
+                permissionsToRequest.add(Manifest.permission.POST_NOTIFICATIONS)
+            }
+        }
+
+        if (permissionsToRequest.isNotEmpty()) {
+            requestCorePermissionsLauncher.launch(permissionsToRequest.toTypedArray())
+        }
     }
 
     private fun handleIncomingShareIntent(intent: Intent?) {
@@ -126,18 +158,6 @@ class MainActivity : ComponentActivity() {
             } catch (_: Exception) {}
 
             db.close()
-        }
-    }
-
-    private fun checkAndRequestNotificationPermission() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            val permissionStatus = ContextCompat.checkSelfPermission(
-                this,
-                Manifest.permission.POST_NOTIFICATIONS
-            )
-            if (permissionStatus != PackageManager.PERMISSION_GRANTED) {
-                requestNotificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
-            }
         }
     }
 }

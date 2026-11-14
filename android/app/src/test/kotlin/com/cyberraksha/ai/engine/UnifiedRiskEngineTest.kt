@@ -6,6 +6,19 @@ import org.junit.Test
 class UnifiedRiskEngineTest {
 
     @Test
+    fun testUserUrgentKycAccountBlockExactMessage() {
+        val message = "URGENT: Your bank account will be blocked within 30 minutes! Your KYC verification has expired. Immediately verify your account and provide your banking credentials to avoid permanent suspension."
+        val result = UnifiedRiskEngine.evaluate(message, "+919876543210")
+
+        assertEquals("BANKING_FRAUD", result.category)
+        assertEquals("CRITICAL", result.severity)
+        assertTrue("Risk score should be >= 95", result.riskScore >= 95f)
+        assertTrue(result.reasons.any { it.contains("BANKING_FRAUD") })
+        assertTrue(result.reasons.any { it.contains("urgency") })
+        assertTrue(result.reasons.any { it.contains("Credential") })
+    }
+
+    @Test
     fun testDigitalArrestFraudDetection() {
         val message = "This is DCP Cyber Cell Delhi. An arrest warrant has been issued in your name for money laundering. Contact immediately on Skype or attend digital arrest hearing."
         val result = UnifiedRiskEngine.evaluate(message, "POLICE-NOTICE")
@@ -57,6 +70,26 @@ class UnifiedRiskEngineTest {
     }
 
     @Test
+    fun testLegitimateBankingSalaryCreditAlert() {
+        val message = "Dear Customer, your salary of Rs 75,000 has been credited to your A/c XX1234 on 01-Nov-24. Avl Bal: Rs 1,12,000. - HDFC Bank"
+        val result = UnifiedRiskEngine.evaluate(message, "HDFC-BNK")
+
+        assertEquals("BENIGN", result.category)
+        assertEquals("LOW", result.severity)
+        assertEquals(0f, result.riskScore, 0.01f)
+    }
+
+    @Test
+    fun testLegitimateMerchantOtpAlert() {
+        val message = "123456 is your OTP for purchase of Rs 499 at Swiggy. Do not share OTP with anyone for security reasons."
+        val result = UnifiedRiskEngine.evaluate(message, "SWIGGY")
+
+        assertEquals("BENIGN", result.category)
+        assertEquals("LOW", result.severity)
+        assertEquals(0f, result.riskScore, 0.01f)
+    }
+
+    @Test
     fun testBenignPersonalMessage() {
         val message = "Hi Rahul, are we still meeting for lunch tomorrow at 1 PM?"
         val result = UnifiedRiskEngine.evaluate(message, "+919876543210")
@@ -67,4 +100,3 @@ class UnifiedRiskEngineTest {
         assertEquals(listOf("No threat signatures detected."), result.reasons)
     }
 }
-

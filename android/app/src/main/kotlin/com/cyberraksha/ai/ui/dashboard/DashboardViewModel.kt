@@ -32,7 +32,7 @@ data class DashboardUiState(
     val smsThreatsCount: Int = 0,
     val callThreatsCount: Int = 0,
     val webThreatsCount: Int = 0,
-    val autonomousProtectionEnabled: Boolean = false,
+    val autonomousProtectionEnabled: Boolean = true,
     val smsProtectionEnabled: Boolean = true,
     val callProtectionEnabled: Boolean = true,
     val webProtectionEnabled: Boolean = true,
