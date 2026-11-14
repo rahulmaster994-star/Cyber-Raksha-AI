@@ -479,10 +479,15 @@ class TestDemo6IncidentResponse:
 # ---------------------------------------------------------------------------
 
 class TestDemo7BrowserMobile:
+    @staticmethod
+    def _get_project_root():
+        from pathlib import Path
+        return str(Path(__file__).resolve().parent.parent.parent)
+
     def test_d7_01_extension_manifest_exists(self):
         """Browser extension manifest.json exists in the browser_extension dir."""
         import os
-        base = r"c:\Users\RAHUL\OneDrive\Desktop\cyberRaksha"
+        base = self._get_project_root()
         candidates = [
             os.path.join(base, "browser_extension", "manifest.json"),
             os.path.join(base, "browser-extension", "manifest.json"),
@@ -494,7 +499,7 @@ class TestDemo7BrowserMobile:
     def test_d7_02_pwa_manifest_exists(self):
         """PWA manifest.json exists in frontend/public."""
         import os
-        base = r"c:\Users\RAHUL\OneDrive\Desktop\cyberRaksha"
+        base = self._get_project_root()
         candidates = [
             os.path.join(base, "frontend", "public", "manifest.json"),
             os.path.join(base, "frontend", "public", "manifest.webmanifest"),
@@ -507,7 +512,7 @@ class TestDemo7BrowserMobile:
     def test_d7_03_extension_background_script_exists(self):
         """Browser extension has background.js."""
         import os
-        base = r"c:\Users\RAHUL\OneDrive\Desktop\cyberRaksha"
+        base = self._get_project_root()
         candidates = [
             os.path.join(base, "browser_extension", "background.js"),
             os.path.join(base, "browser-extension", "background.js"),
