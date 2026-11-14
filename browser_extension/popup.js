@@ -1,5 +1,6 @@
 // popup.js — Cyber Raksha AI Chromium Extension Popup Controller
-const DEFAULT_API_BASE = 'http://127.0.0.1:8000';
+const DEFAULT_API_BASE = 'https://cyberraksha-backend.onrender.com';
+const DEFAULT_DASHBOARD_URL = 'https://frontend-lilac-nu-50.vercel.app';
 
 let currentActiveUrl = '';
 let apiBaseUrl = DEFAULT_API_BASE;
@@ -23,7 +24,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   document.getElementById('openDashboard').addEventListener('click', (e) => {
     e.preventDefault();
-    chrome.tabs.create({ url: 'http://localhost:5173' });
+    chrome.tabs.create({ url: DEFAULT_DASHBOARD_URL });
   });
 
   document.getElementById('openSettings').addEventListener('click', (e) => {

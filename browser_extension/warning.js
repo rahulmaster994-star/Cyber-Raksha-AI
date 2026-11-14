@@ -16,13 +16,26 @@ document.addEventListener('DOMContentLoaded', async () => {
   const threatClassVal = document.getElementById('threatClassVal');
   const sourceVal = document.getElementById('sourceVal');
   const modeVal = document.getElementById('modeVal');
+  const scoreVal = document.getElementById('scoreVal');
+  const timestampVal = document.getElementById('timestampVal');
   const reasonsBox = document.getElementById('reasonsBox');
+
+  const rawScore = parseFloat(params.get('score') || '90.0');
+  if (scoreVal) {
+    scoreVal.innerText = isNaN(rawScore) ? 'N/A' : `${rawScore.toFixed(1)} / 100`;
+  }
+  if (timestampVal) {
+    timestampVal.innerText = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+  }
 
   targetUrlBox.innerText = targetUrl;
   riskLevelVal.innerText = `${level} RISK`;
   threatClassVal.innerText = classification;
 
-  if (source === 'DNR') {
+  if (source === 'REALTIME_DNR' || source === 'REALTIME') {
+    modeVal.innerText = 'Real-Time Protection';
+    modeVal.style.color = '#ef4444';
+  } else if (source === 'DNR') {
     modeVal.innerText = 'Pre-Load Declarative Block';
     modeVal.style.color = '#38bdf8';
   } else {

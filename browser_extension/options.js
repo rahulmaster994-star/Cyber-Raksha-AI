@@ -7,9 +7,9 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   try {
     const stored = await chrome.storage.sync.get(['apiUrl']);
-    input.value = stored.apiUrl || 'http://127.0.0.1:8000';
+    input.value = stored.apiUrl || 'https://cyberraksha-backend.onrender.com';
   } catch (e) {
-    input.value = 'http://127.0.0.1:8000';
+    input.value = 'https://cyberraksha-backend.onrender.com';
   }
 
   // Load Phase A3 notification preferences

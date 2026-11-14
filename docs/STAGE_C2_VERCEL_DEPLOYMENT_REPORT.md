@@ -309,3 +309,4 @@ All major cybersecurity features are operational:
 - **Security hardened** — CSP, HSTS, X-Frame-Options on both frontend and backend
 
 No mock data, no hardcoded secrets, no paid plan upgrades required.
+

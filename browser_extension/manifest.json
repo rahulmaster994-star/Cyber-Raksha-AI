@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Cyber Raksha AI — Browser Shield",
-  "version": "1.2.0",
+  "version": "1.3.0",
   "description": "Proactive Chromium web protection powered by Cyber Raksha AI detection engine, phishing classifiers, declarative network threat intelligence blocking, and intelligent real-time security alerts.",
   "permissions": [
     "declarativeNetRequest",
@@ -9,7 +9,9 @@
     "contextMenus",
     "storage",
     "alarms",
-    "notifications"
+    "notifications",
+    "webNavigation",
+    "tabs"
   ],
   "host_permissions": [
     "*://*/*"

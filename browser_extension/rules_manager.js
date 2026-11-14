@@ -345,16 +345,131 @@ function syncRulesDelta(currentRules, incomingIndicators, extensionBaseUrl = 'ch
   };
 }
 
+/**
+ * Sensitive query parameter names that must be redacted for privacy and security
+ */
+const SENSITIVE_QUERY_PARAMS = new Set([
+  'password', 'passwd', 'pass', 'pwd',
+  'token', 'access_token', 'id_token', 'refresh_token', 'bearer',
+  'secret', 'client_secret', 'api_key', 'apikey', 'key',
+  'auth', 'authorization', 'code', 'session', 'session_id',
+  'sid', 'state', 'otp', 'pin', 'ssn', 'cvv'
+]);
+
+/**
+ * Strips sensitive authentication and token query parameters from URLs
+ */
+function sanitizeUrl(urlStr) {
+  if (!urlStr || typeof urlStr !== 'string') return '';
+  try {
+    const parsed = new URL(urlStr);
+    let changed = false;
+    for (const key of Array.from(parsed.searchParams.keys())) {
+      if (SENSITIVE_QUERY_PARAMS.has(key.toLowerCase())) {
+        parsed.searchParams.set(key, '[REDACTED]');
+        changed = true;
+      }
+    }
+    if (parsed.hash && /token|password|auth|secret|key/i.test(parsed.hash)) {
+      parsed.hash = '#[REDACTED]';
+    }
+    return parsed.toString();
+  } catch (e) {
+    return urlStr;
+  }
+}
+
+/**
+ * Verified infrastructure and popular safe domains to avoid unnecessary blocking
+ */
+const KNOWN_SAFE_DOMAINS = new Set([
+  'google.com', 'www.google.com', 'accounts.google.com', 'mail.google.com',
+  'microsoft.com', 'www.microsoft.com', 'login.microsoftonline.com',
+  'apple.com', 'www.apple.com',
+  'github.com', 'www.github.com', 'api.github.com',
+  'wikipedia.org', 'en.wikipedia.org',
+  'youtube.com', 'www.youtube.com',
+  'vercel.app', 'onrender.com', 'neon.tech',
+  'cyberraksha-backend.onrender.com', 'frontend-lilac-nu-50.vercel.app',
+  'localhost', '127.0.0.1'
+]);
+
+/**
+ * Checks if a hostname belongs to a known safe infrastructure domain
+ */
+function isWhitelistedSafeDomain(hostname) {
+  if (!hostname) return false;
+  const host = hostname.toLowerCase().trim();
+  if (KNOWN_SAFE_DOMAINS.has(host)) return true;
+  for (const safe of KNOWN_SAFE_DOMAINS) {
+    if (host === safe || host.endsWith('.' + safe)) return true;
+  }
+  return false;
+}
+
+/**
+ * Creates an on-the-fly dynamic DNR rule for live navigation intercepts
+ */
+function createDynamicBlockRule(targetUrl, threatType = 'PHISHING', severity = 'CRITICAL', ruleId = null, extensionBaseUrl = 'chrome-extension://cyberraksha/') {
+  const base = extensionBaseUrl.endsWith('/') ? extensionBaseUrl : `${extensionBaseUrl}/`;
+  let cleanUrl = targetUrl.trim();
+  let host = '';
+  let id = ruleId;
+  try {
+    const parsed = new URL(cleanUrl);
+    host = parsed.hostname.toLowerCase();
+    if (!id) {
+      id = hashIndicatorToId('URL', cleanUrl);
+    }
+  } catch (e) {
+    host = cleanUrl.replace(/^https?:\/\//i, '').split('/')[0];
+    if (!id) id = 950000 + Math.floor(Math.random() * 40000);
+  }
+
+  let regexStr;
+  if (SHARED_DOMAINS.has(host)) {
+    try {
+      const parsed = new URL(cleanUrl);
+      const pathAndQuery = parsed.pathname + (parsed.search || '');
+      regexStr = `^https?://([^/]*\\.)?${escapeRegex(host)}(:\\d+)?${escapeRegex(pathAndQuery)}.*$`;
+    } catch (e) {
+      regexStr = `^https?://([^/]*\\.)?${escapeRegex(host)}(:\\d+)?(/.*)?$`;
+    }
+  } else {
+    regexStr = `^https?://([^/]*\\.)?${escapeRegex(host)}(:\\d+)?(/.*)?$`;
+  }
+
+  return {
+    id: id,
+    priority: 10, // Preempts standard feed rules
+    action: {
+      type: 'redirect',
+      redirect: {
+        regexSubstitution: `${base}warning.html?url=\\0&ruleId=${id}&source=REALTIME_DNR&class=${encodeURIComponent(threatType)}&level=${encodeURIComponent(severity)}`
+      }
+    },
+    condition: {
+      regexFilter: regexStr,
+      resourceTypes: ['main_frame']
+    }
+  };
+}
+
 // Export for Node.js test suites while remaining global in browser service worker
 if (typeof module !== 'undefined' && module.exports) {
   module.exports = {
     SHARED_DOMAINS,
+    KNOWN_SAFE_DOMAINS,
     MAX_DYNAMIC_RULES,
     MIN_CONFIDENCE_THRESHOLD,
+    SENSITIVE_QUERY_PARAMS,
+    sanitizeUrl,
+    isWhitelistedSafeDomain,
     hashIndicatorToId,
     escapeRegex,
     validateIndicator,
     createDNRRule,
+    createDynamicBlockRule,
     createOverrideAllowRule,
     syncRulesDelta
   };
