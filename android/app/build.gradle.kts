@@ -25,7 +25,7 @@ android {
     release {
       isMinifyEnabled = true
       proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
-      buildConfigField("String", "BASE_URL", "\"https://your-production-server.com\"")
+      buildConfigField("String", "BASE_URL", "\"https://cyberraksha-backend.onrender.com\"")
     }
   }
   compileOptions {

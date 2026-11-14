@@ -52,3 +52,4 @@ print(f"URL detection (cold): {t_url:.2f} ms | result={r_u.json().get('classific
 print(f"URL detection (warm): {t_url_warm:.2f} ms | result={r_u2.json().get('classification')}")
 print(f"Digital arrest (cold): {t_digital_arrest:.2f} ms | result={r_d.json().get('classification')}")
 print(f"Digital arrest (warm): {t_digital_arrest_warm:.2f} ms | result={r_d2.json().get('classification')}")
+
