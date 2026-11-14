@@ -38,7 +38,7 @@ class AppPreferences(private val context: Context) {
         if (stored.isNullOrBlank() || stored.contains("10.0.2.2") || stored.contains("localhost") || stored.contains("127.0.0.1")) {
             DEFAULT_BACKEND_URL
         } else {
-            stored
+            com.cyberraksha.ai.data.remote.NetworkModule.normalizeBaseUrl(stored)
         }
     }
     val lastSyncTimestamp: Flow<Long> = context.dataStore.data.map { it[KEY_LAST_SYNC] ?: 0L }

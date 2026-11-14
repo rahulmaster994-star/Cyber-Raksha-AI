@@ -108,7 +108,10 @@ fun DashboardScreen(
             // Offline Banner
             if (state.isOffline) {
                 item {
-                    OfflineBanner(onRetry = { viewModel.refresh() })
+                    OfflineBanner(
+                        diagnosticReport = state.diagnosticReport,
+                        onRetry = { viewModel.refresh() }
+                    )
                 }
             }
 
@@ -196,43 +199,90 @@ fun DashboardScreen(
 }
 
 @Composable
-private fun OfflineBanner(onRetry: () -> Unit) {
+private fun OfflineBanner(
+    diagnosticReport: com.cyberraksha.ai.data.repository.DiagnosticReport?,
+    onRetry: () -> Unit
+) {
+    var showDetails by remember { mutableStateOf(false) }
+
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(containerColor = SeverityHigh.copy(alpha = 0.2f)),
         shape = RoundedCornerShape(10.dp)
     ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(12.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween
-        ) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(
-                    imageVector = Icons.Default.CloudOff,
-                    contentDescription = "Offline",
-                    tint = SeverityHigh,
-                    modifier = Modifier.size(20.dp)
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-                Column {
-                    Text(
-                        "Backend Offline",
-                        fontWeight = FontWeight.SemiBold,
-                        color = SeverityHigh,
-                        fontSize = 13.sp
+        Column(modifier = Modifier.padding(12.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.weight(1f).clickable { showDetails = !showDetails }
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.CloudOff,
+                        contentDescription = "Offline",
+                        tint = SeverityHigh,
+                        modifier = Modifier.size(20.dp)
                     )
-                    Text(
-                        "Displaying cached security rules",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = TextSecondary
-                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Column {
+                        Text(
+                            text = if (diagnosticReport?.exceptionType != null)
+                                "Offline: ${diagnosticReport.exceptionType}"
+                            else
+                                "Backend Offline",
+                            fontWeight = FontWeight.SemiBold,
+                            color = SeverityHigh,
+                            fontSize = 13.sp
+                        )
+                        Text(
+                            text = diagnosticReport?.exceptionMessage?.take(40) ?: "Tap for network diagnostics",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = TextSecondary,
+                            maxLines = 1
+                        )
+                    }
+                }
+                TextButton(onClick = onRetry) {
+                    Text("Retry", color = CyberCyan, fontWeight = FontWeight.Bold)
                 }
             }
-            TextButton(onClick = onRetry) {
-                Text("Retry", color = CyberCyan, fontWeight = FontWeight.Bold)
+
+            if (showDetails && diagnosticReport != null) {
+                Spacer(modifier = Modifier.height(8.dp))
+                HorizontalDivider(color = DarkOutline)
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    text = "Endpoint: ${diagnosticReport.healthEndpointUrl}",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = TextPrimary
+                )
+                Text(
+                    text = "HTTP Code: ${diagnosticReport.httpStatusCode ?: "No HTTP response"}",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = TextPrimary
+                )
+                Text(
+                    text = "DNS IPs: ${diagnosticReport.dnsResolvedIps.joinToString(", ")}",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = TextPrimary
+                )
+                Text(
+                    text = "Latency: ${diagnosticReport.latencyMs} ms",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = TextPrimary
+                )
+                if (!diagnosticReport.stackTraceSnippet.isNullOrEmpty()) {
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = diagnosticReport.stackTraceSnippet,
+                        style = MaterialTheme.typography.labelSmall,
+                        color = SeverityCritical,
+                        fontSize = 10.sp
+                    )
+                }
             }
         }
     }

@@ -6,7 +6,10 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.BugReport
 import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Security
 import androidx.compose.material.icons.filled.Shield
 import androidx.compose.material.icons.filled.Warning
@@ -14,11 +17,13 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.cyberraksha.ai.core.AppPreferences
+import com.cyberraksha.ai.data.repository.DiagnosticReport
 import com.cyberraksha.ai.ui.theme.*
 
 @Composable
@@ -81,7 +86,10 @@ fun OnboardingScreen(
                         onDeviceNameChange = viewModel::onDeviceNameChanged,
                         backendUrl = state.backendUrl,
                         onBackendUrlChange = viewModel::onBackendUrlChanged,
-                        errorMessage = state.errorMessage
+                        errorMessage = state.errorMessage,
+                        diagnosticReport = state.diagnosticReport,
+                        isTestingDiagnostics = state.isTestingDiagnostics,
+                        onRunDiagnostics = viewModel::runDiagnostics
                     )
                 }
             }
@@ -278,7 +286,10 @@ private fun StepRegistration(
     onDeviceNameChange: (String) -> Unit,
     backendUrl: String,
     onBackendUrlChange: (String) -> Unit,
-    errorMessage: String?
+    errorMessage: String?,
+    diagnosticReport: DiagnosticReport?,
+    isTestingDiagnostics: Boolean,
+    onRunDiagnostics: () -> Unit
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -329,12 +340,41 @@ private fun StepRegistration(
             )
 
             Text(
-                text = "Default: https://cyberraksha-backend.onrender.com (production cloud). Only change for local development.",
+                text = "Default: https://cyberraksha-backend.onrender.com (production cloud).",
                 style = MaterialTheme.typography.labelSmall,
                 color = TextSecondary,
                 modifier = Modifier.padding(top = 4.dp)
             )
 
+            Spacer(modifier = Modifier.height(12.dp))
+
+            // Developer Diagnostics Trigger Button
+            OutlinedButton(
+                onClick = onRunDiagnostics,
+                enabled = !isTestingDiagnostics,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                if (isTestingDiagnostics) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(16.dp),
+                        strokeWidth = 2.dp,
+                        color = CyberCyan
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("Probing Backend...")
+                } else {
+                    Icon(
+                        imageVector = Icons.Default.BugReport,
+                        contentDescription = "Test",
+                        modifier = Modifier.size(16.dp),
+                        tint = CyberCyan
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("Test Connection & Run Diagnostics", color = CyberCyan)
+                }
+            }
+
+            // Error Display (with exact exception details)
             if (!errorMessage.isNullOrEmpty()) {
                 Spacer(modifier = Modifier.height(12.dp))
                 Row(
@@ -358,7 +398,119 @@ private fun StepRegistration(
                     )
                 }
             }
+
+            // Developer Diagnostics Results Card
+            if (diagnosticReport != null) {
+                Spacer(modifier = Modifier.height(12.dp))
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = CardDefaults.cardColors(
+                        containerColor = if (diagnosticReport.isHealthy)
+                            SeverityLow.copy(alpha = 0.12f)
+                        else
+                            SeverityHigh.copy(alpha = 0.12f)
+                    ),
+                    shape = RoundedCornerShape(8.dp)
+                ) {
+                    Column(modifier = Modifier.padding(12.dp)) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Text(
+                                text = if (diagnosticReport.isHealthy) "PROBE STATUS: HEALTHY (200)" else "PROBE STATUS: FAILED",
+                                style = MaterialTheme.typography.labelMedium,
+                                fontWeight = FontWeight.Bold,
+                                color = if (diagnosticReport.isHealthy) SeverityLow else SeverityHigh
+                            )
+                            Text(
+                                text = "${diagnosticReport.latencyMs} ms",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = TextSecondary
+                            )
+                        }
+
+                        Spacer(modifier = Modifier.height(6.dp))
+                        DiagnosticRow("Target Base URL", diagnosticReport.resolvedBaseUrl)
+                        DiagnosticRow("Health Endpoint", diagnosticReport.healthEndpointUrl)
+                        DiagnosticRow(
+                            "DNS Resolved IPs",
+                            diagnosticReport.dnsResolvedIps.joinToString(", ").ifEmpty { "None" }
+                        )
+                        DiagnosticRow(
+                            "HTTP Status",
+                            diagnosticReport.httpStatusCode?.toString() ?: "No HTTP response"
+                        )
+
+                        if (!diagnosticReport.exceptionType.isNullOrEmpty()) {
+                            DiagnosticRow("Exception", diagnosticReport.exceptionType)
+                            DiagnosticRow("Details", diagnosticReport.exceptionMessage ?: "N/A")
+                        }
+
+                        if (!diagnosticReport.stackTraceSnippet.isNullOrEmpty()) {
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Text(
+                                text = "Stack Trace Snippet:",
+                                style = MaterialTheme.typography.labelSmall,
+                                fontWeight = FontWeight.Bold,
+                                color = TextSecondary
+                            )
+                            Text(
+                                text = diagnosticReport.stackTraceSnippet,
+                                style = MaterialTheme.typography.labelSmall,
+                                fontFamily = FontFamily.Monospace,
+                                color = SeverityCritical,
+                                fontSize = 10.sp
+                            )
+                        }
+
+                        if (!diagnosticReport.responseBodyPreview.isNullOrEmpty()) {
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Text(
+                                text = "Raw Response Preview:",
+                                style = MaterialTheme.typography.labelSmall,
+                                fontWeight = FontWeight.Bold,
+                                color = TextSecondary
+                            )
+                            Text(
+                                text = diagnosticReport.responseBodyPreview,
+                                style = MaterialTheme.typography.labelSmall,
+                                fontFamily = FontFamily.Monospace,
+                                color = TextPrimary,
+                                fontSize = 10.sp
+                            )
+                        }
+                    }
+                }
+            }
         }
+    }
+}
+
+@Composable
+private fun DiagnosticRow(label: String, value: String) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 2.dp),
+        horizontalArrangement = Arrangement.SpaceBetween
+    ) {
+        Text(
+            text = "$label:",
+            style = MaterialTheme.typography.labelSmall,
+            color = TextSecondary,
+            fontWeight = FontWeight.Medium
+        )
+        Text(
+            text = value,
+            style = MaterialTheme.typography.labelSmall,
+            color = TextPrimary,
+            fontFamily = FontFamily.Monospace,
+            fontSize = 11.sp,
+            textAlign = TextAlign.End,
+            modifier = Modifier.padding(start = 8.dp)
+        )
     }
 }
 

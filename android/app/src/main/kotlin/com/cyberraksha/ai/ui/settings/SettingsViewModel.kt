@@ -73,28 +73,32 @@ class SettingsViewModel(
     }
 
     fun saveBackendUrl() {
-        val url = _uiState.value.backendUrl.trim()
+        val rawUrl = _uiState.value.backendUrl.trim()
+        val normalized = NetworkModule.normalizeBaseUrl(rawUrl)
         viewModelScope.launch {
             _uiState.update { it.copy(isTesting = true, statusMessage = null) }
-            val api = NetworkModule.createApiService(url)
+            val api = NetworkModule.getApiService(normalized)
             val healthRepo = HealthRepository(api)
-            val isHealthy = healthRepo.isBackendHealthy()
+            val report = healthRepo.checkHealthDetailed(normalized)
 
-            if (isHealthy) {
-                prefs.saveBackendUrl(url)
+            if (report.isHealthy) {
+                prefs.saveBackendUrl(normalized)
                 _uiState.update {
                     it.copy(
+                        backendUrl = normalized,
                         isTesting = false,
                         isSuccess = true,
-                        statusMessage = "Connected successfully. Configuration saved."
+                        statusMessage = "Connected successfully (${report.latencyMs}ms). Configuration saved."
                     )
                 }
             } else {
+                val err = report.exceptionType ?: "HTTP ${report.httpStatusCode}"
+                val msg = report.exceptionMessage ?: "Connection failed"
                 _uiState.update {
                     it.copy(
                         isTesting = false,
                         isSuccess = false,
-                        statusMessage = "Could not reach Cyber Raksha backend at $url."
+                        statusMessage = "$err: $msg (${report.latencyMs}ms)"
                     )
                 }
             }
@@ -102,12 +106,13 @@ class SettingsViewModel(
     }
 
     fun reregisterDevice() {
-        val url = _uiState.value.backendUrl.trim()
+        val rawUrl = _uiState.value.backendUrl.trim()
+        val normalized = NetworkModule.normalizeBaseUrl(rawUrl)
         val name = _uiState.value.deviceName.trim().ifEmpty { "Android Device" }
 
         viewModelScope.launch {
             _uiState.update { it.copy(isTesting = true, statusMessage = null) }
-            val api = NetworkModule.createApiService(url)
+            val api = NetworkModule.getApiService(normalized)
             val deviceRepo = DeviceRepository(api, prefs)
             val registerUseCase = RegisterDeviceUseCase(prefs, deviceRepo)
 

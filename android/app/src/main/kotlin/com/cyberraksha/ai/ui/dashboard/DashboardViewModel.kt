@@ -31,7 +31,8 @@ data class DashboardUiState(
     val isRefreshing: Boolean = false,
     val protectionModules: ProtectionModulesStatus = ProtectionModulesStatus(),
     val recentActivity: List<SecurityEventItem> = emptyList(),
-    val isOffline: Boolean = false
+    val isOffline: Boolean = false,
+    val diagnosticReport: com.cyberraksha.ai.data.repository.DiagnosticReport? = null
 )
 
 class DashboardViewModel(
@@ -64,21 +65,23 @@ class DashboardViewModel(
         viewModelScope.launch {
             _uiState.update { it.copy(isRefreshing = true) }
 
-            val baseUrl = prefs.backendUrl.firstOrNull() ?: AppPreferences.DEFAULT_BACKEND_URL
-            val api = NetworkModule.createApiService(baseUrl)
+            val rawBaseUrl = prefs.backendUrl.firstOrNull() ?: AppPreferences.DEFAULT_BACKEND_URL
+            val baseUrl = NetworkModule.normalizeBaseUrl(rawBaseUrl)
+            val api = NetworkModule.getApiService(baseUrl)
             val healthRepo = HealthRepository(api)
             val deviceRepo = DeviceRepository(api, prefs)
             val notifRepo = NotificationRepository(api, notificationDao)
             val syncUseCase = SyncNotificationsUseCase(notifRepo, prefs)
 
-            // 1. Health check
-            val healthy = healthRepo.isBackendHealthy()
-            if (!healthy) {
+            // 1. Health check with detailed diagnostic probe
+            val report = healthRepo.checkHealthDetailed(baseUrl)
+            if (!report.isHealthy) {
                 _uiState.update {
                     it.copy(
                         isConnected = false,
                         isOffline = true,
-                        isRefreshing = false
+                        isRefreshing = false,
+                        diagnosticReport = report
                     )
                 }
                 return@launch
