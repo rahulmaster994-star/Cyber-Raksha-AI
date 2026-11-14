@@ -26,3 +26,4 @@ services:
         generateValue: true
       - key: CYBER_RAKSHA_SMS_PEPPER
         generateValue: true
+

@@ -165,6 +165,7 @@ def root() -> RootResponse:
     )
 
 # Direct /api routes as required by Stage 1 specification
+app.include_router(health_router)
 app.include_router(health_router, prefix="/api")
 app.include_router(system_router, prefix="/api")
 app.include_router(modules_router, prefix="/api")
