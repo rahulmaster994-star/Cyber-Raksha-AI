@@ -12,6 +12,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -25,6 +26,7 @@ fun SettingsScreen(
     prefs: AppPreferences,
     onBack: () -> Unit,
     onLogout: () -> Unit = {},
+    onNavigateToOnboarding: () -> Unit = {},
     viewModel: SettingsViewModel = remember { SettingsViewModel(prefs) }
 ) {
     val state by viewModel.uiState.collectAsState()
@@ -37,6 +39,9 @@ fun SettingsScreen(
     val userMobile by prefs.userMobile.collectAsState(initial = null)
     val isMobileVerified by prefs.isMobileVerified.collectAsState(initial = false)
     val userToken by prefs.userToken.collectAsState(initial = null)
+    val whatsappEnabled by prefs.whatsappProtectionEnabled.collectAsState(initial = true)
+    val telegramEnabled by prefs.telegramProtectionEnabled.collectAsState(initial = true)
+    val callBlockingEnabled by prefs.callBlockingEnabled.collectAsState(initial = true)
 
     Scaffold(
         topBar = {
@@ -229,6 +234,91 @@ fun SettingsScreen(
                         modifier = Modifier.fillMaxWidth()
                     ) {
                         Text("Re-register Device with Backend", color = CyberCyan)
+                    }
+                }
+            }
+
+            // Autonomous Defense Vectors & Permissions Card
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(containerColor = DarkSurface),
+                shape = RoundedCornerShape(16.dp)
+            ) {
+                Column(modifier = Modifier.padding(18.dp)) {
+                    Text(
+                        text = "Protection Vectors & Permissions",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.SemiBold,
+                        color = TextPrimary
+                    )
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    // WhatsApp Protection Toggle
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text("WhatsApp Message Shield", fontWeight = FontWeight.Medium, color = TextPrimary)
+                            Text("Inspect incoming previews for fraud & phishing", style = MaterialTheme.typography.labelSmall, color = TextSecondary)
+                        }
+                        Switch(
+                            checked = whatsappEnabled,
+                            onCheckedChange = { coroutineScope.launch { prefs.setWhatsappProtectionEnabled(it) } },
+                            colors = SwitchDefaults.colors(checkedThumbColor = CyberCyan)
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(10.dp))
+
+                    // Telegram Protection Toggle
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text("Telegram Message Shield", fontWeight = FontWeight.Medium, color = TextPrimary)
+                            Text("Inspect incoming previews for crypto & job scams", style = MaterialTheme.typography.labelSmall, color = TextSecondary)
+                        }
+                        Switch(
+                            checked = telegramEnabled,
+                            onCheckedChange = { coroutineScope.launch { prefs.setTelegramProtectionEnabled(it) } },
+                            colors = SwitchDefaults.colors(checkedThumbColor = CyberCyan)
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(10.dp))
+
+                    // Call Blocking Toggle
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text("Auto-block Critical Extortion Calls", fontWeight = FontWeight.Medium, color = TextPrimary)
+                            Text(if (callBlockingEnabled) "Rejects digital arrest callers before ring" else "Permits ring; displays warning banner", style = MaterialTheme.typography.labelSmall, color = TextSecondary)
+                        }
+                        Switch(
+                            checked = callBlockingEnabled,
+                            onCheckedChange = { coroutineScope.launch { prefs.setCallBlockingEnabled(it) } },
+                            colors = SwitchDefaults.colors(checkedThumbColor = CyberCyan)
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(14.dp))
+
+                    Button(
+                        onClick = onNavigateToOnboarding,
+                        colors = ButtonDefaults.buttonColors(containerColor = CyberCyan, contentColor = Color.Black),
+                        shape = RoundedCornerShape(8.dp),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Icon(Icons.Default.Security, contentDescription = null, modifier = Modifier.size(16.dp))
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("Open Permission & Battery Dashboard", fontWeight = FontWeight.Bold)
                     }
                 }
             }

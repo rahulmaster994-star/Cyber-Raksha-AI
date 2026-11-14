@@ -5,14 +5,21 @@ import android.service.notification.NotificationListenerService
 import android.service.notification.StatusBarNotification
 import android.util.Log
 import androidx.room.Room
+import com.cyberraksha.ai.core.AppPreferences
 import com.cyberraksha.ai.data.local.AppDatabase
 import com.cyberraksha.ai.data.local.ThreatIncidentEntity
+import com.cyberraksha.ai.data.remote.NetworkModule
+import com.cyberraksha.ai.data.remote.SecurityEventApiRequest
 import com.cyberraksha.ai.engine.UnifiedRiskEngine
 import com.cyberraksha.ai.notifications.NotificationHelper
+import com.google.gson.Gson
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withTimeoutOrNull
+import java.util.concurrent.ConcurrentHashMap
 
 /**
  * Cyber Raksha AI - Real-Time WhatsApp & Telegram Notification Protection Service
@@ -42,6 +49,9 @@ class CyberRakshaNotificationListenerService : NotificationListenerService() {
         @Volatile
         var lastThreatDetected: String? = null
             private set
+
+        // 5-second deduplication cache across notification updates
+        private val recentAlertCache = ConcurrentHashMap<String, Long>()
     }
 
     override fun onListenerConnected() {
@@ -91,10 +101,34 @@ class CyberRakshaNotificationListenerService : NotificationListenerService() {
             return
         }
 
-        val source = if (pkg.contains("whatsapp")) "WHATSAPP" else "TELEGRAM"
+        val isWhatsApp = pkg.contains("whatsapp")
+        val source = if (isWhatsApp) "WHATSAPP" else "TELEGRAM"
+
+        // Deduplication: prevent duplicate alerts for the same message within 5 seconds
+        val deduplicationKey = "${pkg}_${title}_${text.hashCode()}"
+        val now = System.currentTimeMillis()
+        val lastSeen = recentAlertCache[deduplicationKey]
+        if (lastSeen != null && (now - lastSeen) < 5_000L) {
+            Log.d(TAG, "Duplicate $source threat alert suppressed within 5s deduplication window")
+            return
+        }
+        recentAlertCache[deduplicationKey] = now
 
         serviceScope.launch {
             try {
+                val prefs = AppPreferences(applicationContext)
+                val autoEnabled = prefs.autonomousProtectionEnabled.firstOrNull() ?: true
+                val moduleEnabled = if (isWhatsApp) {
+                    prefs.whatsappProtectionEnabled.firstOrNull() ?: true
+                } else {
+                    prefs.telegramProtectionEnabled.firstOrNull() ?: true
+                }
+
+                if (!autoEnabled || !moduleEnabled) {
+                    Log.d(TAG, "$source protection is toggled off in settings.")
+                    return@launch
+                }
+
                 val eval = UnifiedRiskEngine.evaluate(text, title)
                 if (eval.severity == "HIGH" || eval.severity == "CRITICAL") {
                     lastThreatDetected = "$source: ${eval.category} (${eval.severity})"
@@ -102,21 +136,23 @@ class CyberRakshaNotificationListenerService : NotificationListenerService() {
 
                     // 1. Alert citizen immediately via high-priority notification
                     val notifTitle = "⚠️ [FRAUD DETECTED] $source Alert"
-                    val notifBody = "Suspicious message from '$title' flagged as ${eval.category} (${eval.severity} Risk). Do not share OTP or click links."
+                    val notifBody = "Suspicious message from '$title' flagged as ${eval.category} (${eval.severity} Risk).\n${eval.recommendedAction}"
                     NotificationHelper.showNotification(
                         context = applicationContext,
                         title = notifTitle,
                         message = notifBody,
                         severity = eval.severity,
-                        notificationId = (System.currentTimeMillis() % 100000).toInt()
+                        notificationId = deduplicationKey.hashCode()
                     )
 
-                    // 2. Persist threat incident into local Room database
+                    // 2. Persist threat incident into local Room database with unified incident structure
                     val db = Room.databaseBuilder(
                         applicationContext,
                         AppDatabase::class.java,
                         "cyber_raksha_db"
                     ).fallbackToDestructiveMigration().build()
+
+                    val currentUserId = prefs.userEmail.firstOrNull() ?: prefs.userName.firstOrNull() ?: prefs.deviceId.firstOrNull()
 
                     val incident = ThreatIncidentEntity(
                         incidentType = source,
@@ -124,11 +160,46 @@ class CyberRakshaNotificationListenerService : NotificationListenerService() {
                         category = eval.category,
                         severity = eval.severity,
                         riskScore = eval.riskScore,
-                        description = text,
+                        description = "Automated $source threat intercepted from $title: ${eval.reasons.firstOrNull() ?: eval.category}",
                         timestamp = System.currentTimeMillis(),
-                        isSynced = false
+                        isSynced = false,
+                        userId = currentUserId,
+                        originalContent = text,
+                        detectionExplanation = eval.reasons.joinToString("; "),
+                        recommendedAction = eval.recommendedAction
                     )
-                    db.threatIncidentDao().insertIncident(incident)
+                    val incidentId = db.threatIncidentDao().insertIncident(incident)
+
+                    // 3. Cloud Telemetry Sync (Bound by 3-second timeout)
+                    try {
+                        withTimeoutOrNull(3000L) {
+                            val deviceId = prefs.deviceId.firstOrNull() ?: "android-device"
+                            val backendUrl = prefs.backendUrl.firstOrNull() ?: AppPreferences.DEFAULT_BACKEND_URL
+                            val api = NetworkModule.getApiService(backendUrl)
+
+                            val response = api.reportSecurityEvent(
+                                SecurityEventApiRequest(
+                                    eventType = "AUTOMATIC_${source}_THREAT_INTERCEPTED",
+                                    severity = eval.severity,
+                                    sourceComponent = "ANDROID_$source",
+                                    deviceId = deviceId,
+                                    threatIndicator = eval.extractedUrls.firstOrNull() ?: title,
+                                    riskScore = eval.riskScore,
+                                    detectionReason = eval.reasons.firstOrNull() ?: eval.category,
+                                    description = "Autonomous $source fraud detection: ${eval.category} from $title",
+                                    rawPayload = "{\"sender\":\"$title\",\"urls\":${Gson().toJson(eval.extractedUrls)}}"
+                                )
+                            )
+                            if (response.isSuccessful) {
+                                db.threatIncidentDao().markAsSynced(listOf(incidentId))
+                                Log.i(TAG, "$source threat telemetry synced to backend successfully.")
+                            }
+                        }
+                    } catch (e: Exception) {
+                        Log.w(TAG, "Offline/timeout syncing $source telemetry; queued for WorkManager: ${e.message}")
+                    } finally {
+                        db.close()
+                    }
                 }
             } catch (e: Throwable) {
                 Log.e(TAG, "Error evaluating incoming $source notification", e)

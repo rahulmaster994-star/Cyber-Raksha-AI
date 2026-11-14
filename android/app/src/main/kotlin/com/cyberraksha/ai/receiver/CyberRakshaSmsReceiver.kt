@@ -158,6 +158,8 @@ class CyberRakshaSmsReceiver : BroadcastReceiver() {
 
             // 4. If Threat is Detected (HIGH or CRITICAL): Persist and Alert IMMEDIATELY
             if (assessment.severity == "HIGH" || assessment.severity == "CRITICAL") {
+                val currentUserId = prefs.userEmail.firstOrNull() ?: prefs.userName.firstOrNull() ?: prefs.deviceId.firstOrNull()
+
                 incidentId = db.threatIncidentDao().insertIncident(
                     ThreatIncidentEntity(
                         incidentType = "SMS",
@@ -165,7 +167,13 @@ class CyberRakshaSmsReceiver : BroadcastReceiver() {
                         category = assessment.category,
                         severity = assessment.severity,
                         riskScore = assessment.riskScore,
-                        description = "Automated SMS threat intercepted from $sender: ${assessment.reasons.firstOrNull() ?: assessment.category}"
+                        description = "Automated SMS threat intercepted from $sender: ${assessment.reasons.firstOrNull() ?: assessment.category}",
+                        timestamp = System.currentTimeMillis(),
+                        isSynced = false,
+                        userId = currentUserId,
+                        originalContent = body,
+                        detectionExplanation = assessment.reasons.joinToString("; "),
+                        recommendedAction = assessment.recommendedAction
                     )
                 )
                 incidentSaved = true

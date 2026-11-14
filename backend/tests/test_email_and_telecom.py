@@ -88,3 +88,4 @@ def test_account_deletion_flow(client):
     # Profile lookup should now fail (account purged)
     me_after = client.get("/api/v1/auth/me", headers=headers)
     assert me_after.status_code == 401
+

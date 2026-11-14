@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.cyberraksha.ai.core.AppPreferences
 import com.cyberraksha.ai.data.local.NotificationDao
 import com.cyberraksha.ai.data.local.ThreatIncidentDao
+import com.cyberraksha.ai.data.local.ThreatIncidentEntity
 import com.cyberraksha.ai.data.remote.NetworkModule
 import com.cyberraksha.ai.data.remote.ProtectionModulesStatus
 import com.cyberraksha.ai.data.remote.SecurityEventItem
@@ -32,14 +33,20 @@ data class DashboardUiState(
     val smsThreatsCount: Int = 0,
     val callThreatsCount: Int = 0,
     val webThreatsCount: Int = 0,
+    val whatsappThreatsCount: Int = 0,
+    val telegramThreatsCount: Int = 0,
     val autonomousProtectionEnabled: Boolean = true,
     val smsProtectionEnabled: Boolean = true,
     val callProtectionEnabled: Boolean = true,
     val webProtectionEnabled: Boolean = true,
+    val whatsappProtectionEnabled: Boolean = true,
+    val telegramProtectionEnabled: Boolean = true,
+    val callBlockingEnabled: Boolean = true,
     val lastSyncFormatted: String = "Never",
     val isRefreshing: Boolean = false,
     val protectionModules: ProtectionModulesStatus = ProtectionModulesStatus(),
     val recentActivity: List<SecurityEventItem> = emptyList(),
+    val localIncidents: List<ThreatIncidentEntity> = emptyList(),
     val isOffline: Boolean = false,
     val diagnosticReport: com.cyberraksha.ai.data.repository.DiagnosticReport? = null
 )
@@ -92,11 +99,36 @@ class DashboardViewModel(
                     _uiState.update { it.copy(webProtectionEnabled = enabled) }
                 }
             }
+            launch {
+                prefs.whatsappProtectionEnabled.collect { enabled ->
+                    _uiState.update { it.copy(whatsappProtectionEnabled = enabled) }
+                }
+            }
+            launch {
+                prefs.telegramProtectionEnabled.collect { enabled ->
+                    _uiState.update { it.copy(telegramProtectionEnabled = enabled) }
+                }
+            }
+            launch {
+                prefs.callBlockingEnabled.collect { enabled ->
+                    _uiState.update { it.copy(callBlockingEnabled = enabled) }
+                }
+            }
 
             // Observe incident counters from Room DB
             launch {
                 threatIncidentDao.getTotalIncidentCountFlow().collect { count ->
                     _uiState.update { it.copy(totalThreatsBlocked = count) }
+                }
+            }
+            launch {
+                threatIncidentDao.getCriticalIncidentCountFlow().collect { count ->
+                    _uiState.update { it.copy(criticalCount = count) }
+                }
+            }
+            launch {
+                threatIncidentDao.getHighIncidentCountFlow().collect { count ->
+                    _uiState.update { it.copy(highCount = count) }
                 }
             }
             launch {
@@ -112,6 +144,21 @@ class DashboardViewModel(
             launch {
                 threatIncidentDao.getIncidentCountByTypeFlow("WEB_DNS").collect { count ->
                     _uiState.update { it.copy(webThreatsCount = count) }
+                }
+            }
+            launch {
+                threatIncidentDao.getWhatsAppIncidentCountFlow().collect { count ->
+                    _uiState.update { it.copy(whatsappThreatsCount = count) }
+                }
+            }
+            launch {
+                threatIncidentDao.getTelegramIncidentCountFlow().collect { count ->
+                    _uiState.update { it.copy(telegramThreatsCount = count) }
+                }
+            }
+            launch {
+                threatIncidentDao.getAllIncidentsFlow().collect { incidents ->
+                    _uiState.update { it.copy(localIncidents = incidents.take(15)) }
                 }
             }
         }
@@ -142,6 +189,20 @@ class DashboardViewModel(
         viewModelScope.launch {
             prefs.setWebProtectionEnabled(enabled)
             _uiState.update { it.copy(webProtectionEnabled = enabled) }
+        }
+    }
+
+    fun toggleWhatsappProtection(enabled: Boolean) {
+        viewModelScope.launch {
+            prefs.setWhatsappProtectionEnabled(enabled)
+            _uiState.update { it.copy(whatsappProtectionEnabled = enabled) }
+        }
+    }
+
+    fun toggleTelegramProtection(enabled: Boolean) {
+        viewModelScope.launch {
+            prefs.setTelegramProtectionEnabled(enabled)
+            _uiState.update { it.copy(telegramProtectionEnabled = enabled) }
         }
     }
 
@@ -209,11 +270,6 @@ class DashboardViewModel(
                 is Result.Error -> {}
             }
 
-            // 5. Query counts from local DB
-            val allNotifs = notificationDao.getAllOnce(100)
-            val crit = allNotifs.count { it.severity.equals("CRITICAL", ignoreCase = true) && !it.isRead }
-            val high = allNotifs.count { it.severity.equals("HIGH", ignoreCase = true) && !it.isRead }
-
             val lastSync = prefs.lastSyncTimestamp.firstOrNull() ?: 0L
             val lastSyncText = if (lastSync > 0) {
                 val diffSeconds = (System.currentTimeMillis() - lastSync) / 1000
@@ -232,13 +288,9 @@ class DashboardViewModel(
                     securityPosture = posture,
                     protectionModules = modules,
                     recentActivity = activity,
-                    criticalCount = crit,
-                    highCount = high,
                     lastSyncFormatted = lastSyncText
                 )
             }
         }
     }
 }
-
-

@@ -106,7 +106,8 @@ fun CyberRakshaNavHost(prefs: AppPreferences) {
                 onNavigateToSmsProtection  = { navController.navigate(Routes.SMS_PROTECTION) },
                 onNavigateToCallProtection = { navController.navigate(Routes.CALL_PROTECTION) },
                 onNavigateToThreatHistory  = { navController.navigate(Routes.THREAT_HISTORY) },
-                onNavigateToComplaints     = { navController.navigate(Routes.COMPLAINTS) }
+                onNavigateToComplaints     = { navController.navigate(Routes.COMPLAINTS) },
+                onNavigateToOnboarding     = { navController.navigate(Routes.ONBOARDING) }
             )
         }
         composable(Routes.COMPLAINTS) {
@@ -129,7 +130,8 @@ fun CyberRakshaNavHost(prefs: AppPreferences) {
                     navController.navigate(Routes.AUTH) {
                         popUpTo(0) { inclusive = true }
                     }
-                }
+                },
+                onNavigateToOnboarding = { navController.navigate(Routes.ONBOARDING) }
             )
         }
         composable(Routes.SMS_PROTECTION) {

@@ -47,7 +47,8 @@ fun DashboardScreen(
     onNavigateToSmsProtection: () -> Unit = {},
     onNavigateToCallProtection: () -> Unit = {},
     onNavigateToThreatHistory: () -> Unit = {},
-    onNavigateToComplaints: () -> Unit = {}
+    onNavigateToComplaints: () -> Unit = {},
+    onNavigateToOnboarding: () -> Unit = {}
 ) {
     val context = LocalContext.current
     val db = remember {
@@ -277,8 +278,12 @@ fun DashboardScreen(
             item {
                 SecurityOverviewCard(
                     totalBlocked = state.totalThreatsBlocked,
+                    criticalCount = state.criticalCount,
+                    highCount = state.highCount,
                     smsThreats = state.smsThreatsCount,
                     callThreats = state.callThreatsCount,
+                    whatsappThreats = state.whatsappThreatsCount,
+                    telegramThreats = state.telegramThreatsCount,
                     webThreats = state.webThreatsCount,
                     onClickAlerts = onNavigateToAlerts
                 )
@@ -290,9 +295,12 @@ fun DashboardScreen(
                     smsActive = state.smsProtectionEnabled,
                     callActive = state.callProtectionEnabled,
                     webActive = state.webProtectionEnabled,
+                    whatsappActive = state.whatsappProtectionEnabled,
+                    telegramActive = state.telegramProtectionEnabled,
                     onOpenSms = onNavigateToSmsProtection,
                     onOpenCall = onNavigateToCallProtection,
-                    onOpenHistory = onNavigateToThreatHistory
+                    onOpenHistory = onNavigateToThreatHistory,
+                    onOpenPermissions = onNavigateToOnboarding
                 )
             }
 
@@ -370,8 +378,16 @@ fun DashboardScreen(
                 }
             }
 
-            // Recent Activity Items
-            if (state.recentActivity.isEmpty()) {
+            // Recent Activity / Local Threat Incidents
+            if (state.localIncidents.isNotEmpty()) {
+                items(state.localIncidents) { incident ->
+                    LocalIncidentCard(incident)
+                }
+            } else if (state.recentActivity.isNotEmpty()) {
+                items(state.recentActivity) { event ->
+                    RecentActivityItem(event)
+                }
+            } else {
                 item {
                     Card(
                         modifier = Modifier.fillMaxWidth(),
@@ -391,10 +407,6 @@ fun DashboardScreen(
                             )
                         }
                     }
-                }
-            } else {
-                items(state.recentActivity) { event ->
-                    RecentActivityItem(event)
                 }
             }
 
@@ -869,8 +881,12 @@ private fun StatusPill(label: String, active: Boolean) {
 @Composable
 private fun SecurityOverviewCard(
     totalBlocked: Int,
+    criticalCount: Int,
+    highCount: Int,
     smsThreats: Int,
     callThreats: Int,
+    whatsappThreats: Int,
+    telegramThreats: Int,
     webThreats: Int,
     onClickAlerts: () -> Unit
 ) {
@@ -901,16 +917,49 @@ private fun SecurityOverviewCard(
             }
             Spacer(modifier = Modifier.height(14.dp))
 
+            // Primary Severity Counters
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                MetricItem(label = "Threats Intercepted", count = "$totalBlocked", color = SeverityCritical)
-                MetricItem(label = "SMS Scams", count = "$smsThreats", color = SeverityHigh)
-                MetricItem(label = "Call Scams", count = "$callThreats", color = CyberCyan)
-                MetricItem(label = "Phishing Sites", count = "$webThreats", color = TextPrimary)
+                MetricItem(label = "Total Threats", count = "$totalBlocked", color = SeverityCritical)
+                MetricItem(label = "Critical", count = "$criticalCount", color = SeverityCritical)
+                MetricItem(label = "High Risk", count = "$highCount", color = SeverityHigh)
+                MetricItem(label = "Web Phishing", count = "$webThreats", color = TextPrimary)
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
+            HorizontalDivider(color = DarkOutline)
+            Spacer(modifier = Modifier.height(10.dp))
+
+            // Breakdown by Vector
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                VectorCounter("SMS", smsThreats)
+                VectorCounter("Calls", callThreats)
+                VectorCounter("WhatsApp", whatsappThreats)
+                VectorCounter("Telegram", telegramThreats)
             }
         }
+    }
+}
+
+@Composable
+private fun VectorCounter(label: String, count: Int) {
+    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        Text(
+            text = "$count",
+            fontSize = 15.sp,
+            fontWeight = FontWeight.Bold,
+            color = if (count > 0) SeverityHigh else TextSecondary
+        )
+        Text(
+            text = label,
+            fontSize = 11.sp,
+            color = TextSecondary
+        )
     }
 }
 
@@ -938,9 +987,12 @@ private fun ProtectionModulesCard(
     smsActive: Boolean,
     callActive: Boolean,
     webActive: Boolean,
+    whatsappActive: Boolean,
+    telegramActive: Boolean,
     onOpenSms: () -> Unit,
     onOpenCall: () -> Unit,
-    onOpenHistory: () -> Unit
+    onOpenHistory: () -> Unit,
+    onOpenPermissions: () -> Unit
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -967,9 +1019,21 @@ private fun ProtectionModulesCard(
 
             ModuleRow("SMS Scam Guard", "Telephony BroadcastReceiver Active", smsActive, onClick = onOpenSms)
             ModuleRow("Fraud Call Screener", "Android CallScreeningService Active", callActive, onClick = onOpenCall)
+            ModuleRow("WhatsApp Shield", "NotificationListener Preview Scanner", whatsappActive)
+            ModuleRow("Telegram Shield", "NotificationListener Preview Scanner", telegramActive)
             ModuleRow("DNS Phishing Sinkhole", "Local UDP 53 VpnService Active", webActive)
-            ModuleRow("Instant Share Scanner", "Target for WhatsApp & Browser links", true)
-            ModuleRow("Threat Intel Engine", "URLhaus & OpenPhish Synced", true)
+
+            Spacer(modifier = Modifier.height(10.dp))
+            OutlinedButton(
+                onClick = onOpenPermissions,
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(8.dp),
+                colors = ButtonDefaults.outlinedButtonColors(contentColor = CyberCyan)
+            ) {
+                Icon(Icons.Default.Security, contentDescription = null, modifier = Modifier.size(16.dp))
+                Spacer(modifier = Modifier.width(8.dp))
+                Text("Permissions & Protection Dashboard", fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
+            }
         }
     }
 }
@@ -1053,6 +1117,101 @@ private fun RecentActivityItem(event: SecurityEventItem) {
                     text = event.createdAt,
                     style = MaterialTheme.typography.labelSmall,
                     color = TextSecondary
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun LocalIncidentCard(incident: com.cyberraksha.ai.data.local.ThreatIncidentEntity) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = DarkSurface),
+        shape = RoundedCornerShape(12.dp)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(14.dp)
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    val color = when (incident.severity.uppercase()) {
+                        "CRITICAL" -> SeverityCritical
+                        "HIGH" -> SeverityHigh
+                        "MEDIUM" -> SeverityMedium
+                        else -> SeverityLow
+                    }
+                    Box(
+                        modifier = Modifier
+                            .size(10.dp)
+                            .clip(CircleShape)
+                            .background(color)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Surface(
+                        color = CyberCyan.copy(alpha = 0.15f),
+                        shape = RoundedCornerShape(4.dp)
+                    ) {
+                        Text(
+                            text = incident.incidentType,
+                            color = CyberCyan,
+                            fontSize = 10.sp,
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                        )
+                    }
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = incident.indicator,
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = TextPrimary,
+                        maxLines = 1
+                    )
+                }
+                Surface(
+                    color = when (incident.severity.uppercase()) {
+                        "CRITICAL" -> SeverityCritical.copy(alpha = 0.15f)
+                        "HIGH" -> SeverityHigh.copy(alpha = 0.15f)
+                        else -> SeverityLow.copy(alpha = 0.15f)
+                    },
+                    shape = RoundedCornerShape(4.dp)
+                ) {
+                    Text(
+                        text = "${incident.severity} (${incident.riskScore.toInt()}%)",
+                        color = when (incident.severity.uppercase()) {
+                            "CRITICAL" -> SeverityCritical
+                            "HIGH" -> SeverityHigh
+                            else -> SeverityLow
+                        },
+                        fontSize = 10.sp,
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(6.dp))
+            Text(
+                text = incident.description,
+                style = MaterialTheme.typography.bodySmall,
+                color = TextSecondary,
+                maxLines = 2
+            )
+
+            if (!incident.recommendedAction.isNullOrBlank()) {
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = "Action: ${incident.recommendedAction}",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = CyberCyan,
+                    maxLines = 1
                 )
             }
         }

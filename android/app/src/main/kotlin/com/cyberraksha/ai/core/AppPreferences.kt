@@ -34,6 +34,9 @@ class AppPreferences(private val context: Context) {
         val KEY_IS_MOBILE_VERIFIED = booleanPreferencesKey("is_mobile_verified")
         val KEY_CONSENT_GIVEN = booleanPreferencesKey("consent_given")
         val KEY_NOTIF_LISTENER_ENABLED = booleanPreferencesKey("notif_listener_enabled")
+        val KEY_WHATSAPP_PROTECTION = booleanPreferencesKey("whatsapp_protection_enabled")
+        val KEY_TELEGRAM_PROTECTION = booleanPreferencesKey("telegram_protection_enabled")
+        val KEY_CALL_BLOCKING_ENABLED = booleanPreferencesKey("call_blocking_enabled")
         const val DEFAULT_BACKEND_URL = "https://cyberraksha-backend.onrender.com"
     }
 
@@ -53,6 +56,9 @@ class AppPreferences(private val context: Context) {
     val isMobileVerified: Flow<Boolean> = context.dataStore.data.map { it[KEY_IS_MOBILE_VERIFIED] ?: false }
     val consentGiven: Flow<Boolean> = context.dataStore.data.map { it[KEY_CONSENT_GIVEN] ?: false }
     val notifListenerEnabled: Flow<Boolean> = context.dataStore.data.map { it[KEY_NOTIF_LISTENER_ENABLED] ?: true }
+    val whatsappProtectionEnabled: Flow<Boolean> = context.dataStore.data.map { it[KEY_WHATSAPP_PROTECTION] ?: true }
+    val telegramProtectionEnabled: Flow<Boolean> = context.dataStore.data.map { it[KEY_TELEGRAM_PROTECTION] ?: true }
+    val callBlockingEnabled: Flow<Boolean> = context.dataStore.data.map { it[KEY_CALL_BLOCKING_ENABLED] ?: true }
     val onboardingComplete: Flow<Boolean> = context.dataStore.data.map { it[KEY_ONBOARDING_COMPLETE] ?: false }
     val backendUrl: Flow<String> = context.dataStore.data.map { 
         val stored = it[KEY_BACKEND_URL]?.trim()
@@ -85,6 +91,9 @@ class AppPreferences(private val context: Context) {
     suspend fun setCallProtectionEnabled(enabled: Boolean) = context.dataStore.edit { it[KEY_CALL_PROTECTION] = enabled }
     suspend fun setWebProtectionEnabled(enabled: Boolean) = context.dataStore.edit { it[KEY_WEB_PROTECTION] = enabled }
     suspend fun setNotifListenerEnabled(enabled: Boolean) = context.dataStore.edit { it[KEY_NOTIF_LISTENER_ENABLED] = enabled }
+    suspend fun setWhatsappProtectionEnabled(enabled: Boolean) = context.dataStore.edit { it[KEY_WHATSAPP_PROTECTION] = enabled }
+    suspend fun setTelegramProtectionEnabled(enabled: Boolean) = context.dataStore.edit { it[KEY_TELEGRAM_PROTECTION] = enabled }
+    suspend fun setCallBlockingEnabled(enabled: Boolean) = context.dataStore.edit { it[KEY_CALL_BLOCKING_ENABLED] = enabled }
     suspend fun setConsentGiven(given: Boolean) = context.dataStore.edit { it[KEY_CONSENT_GIVEN] = given }
     suspend fun saveUserToken(token: String) = context.dataStore.edit {
         it[KEY_USER_TOKEN] = SecureTokenManager.encrypt(token)

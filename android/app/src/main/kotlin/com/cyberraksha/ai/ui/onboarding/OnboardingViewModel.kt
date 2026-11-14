@@ -1,6 +1,13 @@
 package com.cyberraksha.ai.ui.onboarding
 
+import android.Manifest
+import android.content.Context
+import android.content.pm.PackageManager
+import android.net.VpnService
 import android.os.Build
+import android.os.PowerManager
+import androidx.core.app.NotificationManagerCompat
+import androidx.core.content.ContextCompat
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.cyberraksha.ai.core.AppPreferences
@@ -10,6 +17,8 @@ import com.cyberraksha.ai.data.repository.DiagnosticReport
 import com.cyberraksha.ai.data.repository.HealthRepository
 import com.cyberraksha.ai.data.repository.Result
 import com.cyberraksha.ai.domain.usecase.RegisterDeviceUseCase
+import com.cyberraksha.ai.ui.call_protection.CallScreeningHelper
+import com.cyberraksha.ai.ui.call_protection.CallScreeningStatus
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -25,7 +34,18 @@ data class OnboardingUiState(
     val errorMessage: String? = null,
     val isRegistered: Boolean = false,
     val diagnosticReport: DiagnosticReport? = null,
-    val isTestingDiagnostics: Boolean = false
+    val isTestingDiagnostics: Boolean = false,
+
+    // Real-Time Permission & Protection Status Dashboard
+    val isSmsActive: Boolean = false,
+    val isNotificationsGranted: Boolean = false,
+    val isWhatsAppActive: Boolean = false,
+    val isTelegramActive: Boolean = false,
+    val isCallActive: Boolean = false,
+    val isDnsActive: Boolean = false,
+    val isBatteryOptimizedIgnored: Boolean = false,
+    val isBackendConnected: Boolean = false,
+    val backendLatencyMs: Long? = null
 )
 
 class OnboardingViewModel(
@@ -40,6 +60,56 @@ class OnboardingViewModel(
             val savedUrl = prefs.backendUrl.firstOrNull() ?: AppPreferences.DEFAULT_BACKEND_URL
             val savedName = prefs.deviceName.firstOrNull() ?: "${Build.MANUFACTURER} ${Build.MODEL}".trim()
             _uiState.update { it.copy(backendUrl = savedUrl, deviceName = savedName) }
+            checkBackendHealth()
+        }
+    }
+
+    fun refreshPermissionState(context: Context) {
+        val hasSms = ContextCompat.checkSelfPermission(context, Manifest.permission.RECEIVE_SMS) == PackageManager.PERMISSION_GRANTED
+        val hasNotif = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED
+        } else {
+            NotificationManagerCompat.from(context).areNotificationsEnabled()
+        }
+        val hasNotifListener = NotificationManagerCompat.getEnabledListenerPackages(context).contains(context.packageName)
+        val hasCallRole = CallScreeningHelper.getScreeningStatus(context) == CallScreeningStatus.ACTIVE
+        val vpnReady = VpnService.prepare(context) == null
+        val powerManager = context.getSystemService(Context.POWER_SERVICE) as? PowerManager
+        val batteryIgnored = powerManager?.isIgnoringBatteryOptimizations(context.packageName) ?: false
+
+        _uiState.update {
+            it.copy(
+                isSmsActive = hasSms,
+                isNotificationsGranted = hasNotif,
+                isWhatsAppActive = hasNotifListener,
+                isTelegramActive = hasNotifListener,
+                isCallActive = hasCallRole,
+                isDnsActive = vpnReady,
+                isBatteryOptimizedIgnored = batteryIgnored
+            )
+        }
+
+        checkBackendHealth()
+    }
+
+    fun checkBackendHealth() {
+        val url = NetworkModule.normalizeBaseUrl(_uiState.value.backendUrl)
+        viewModelScope.launch {
+            try {
+                val api = NetworkModule.getApiService(url)
+                val startTime = System.currentTimeMillis()
+                val resp = api.getHealth()
+                val latency = System.currentTimeMillis() - startTime
+                val isOk = resp.isSuccessful && resp.body()?.status == "healthy"
+                _uiState.update {
+                    it.copy(
+                        isBackendConnected = isOk,
+                        backendLatencyMs = if (isOk) latency else null
+                    )
+                }
+            } catch (_: Exception) {
+                _uiState.update { it.copy(isBackendConnected = false, backendLatencyMs = null) }
+            }
         }
     }
 
@@ -78,70 +148,35 @@ class OnboardingViewModel(
                 it.copy(
                     isTestingDiagnostics = false,
                     diagnosticReport = report,
-                    errorMessage = err
+                    errorMessage = err,
+                    isBackendConnected = report.isHealthy,
+                    backendLatencyMs = if (report.isHealthy) report.latencyMs else null
                 )
             }
         }
     }
 
-    fun registerDevice(onSuccess: () -> Unit) {
+    fun completeOnboardingAndRegister(onSuccess: () -> Unit) {
         val state = _uiState.value
         val normalizedUrl = NetworkModule.normalizeBaseUrl(state.backendUrl)
-        val name = state.deviceName.trim().ifEmpty { "Android Device" }
+        val name = state.deviceName.trim().ifEmpty { "${Build.MANUFACTURER} ${Build.MODEL}".trim() }
 
         viewModelScope.launch {
-            _uiState.update { it.copy(isLoading = true, errorMessage = null, diagnosticReport = null) }
-
-            // 1. Save normalized URL to preferences
+            _uiState.update { it.copy(isLoading = true, errorMessage = null) }
             prefs.saveBackendUrl(normalizedUrl)
+            prefs.saveDeviceName(name)
 
-            // 2. Perform deep diagnostic check
-            val healthRepo = HealthRepository(NetworkModule.getApiService(normalizedUrl))
-            val report = healthRepo.checkHealthDetailed(normalizedUrl)
-            _uiState.update { it.copy(diagnosticReport = report) }
+            // Register device in backend
+            try {
+                val api = NetworkModule.getApiService(normalizedUrl)
+                val deviceRepo = DeviceRepository(api, prefs)
+                val registerUseCase = RegisterDeviceUseCase(prefs, deviceRepo)
+                registerUseCase(name)
+            } catch (_: Exception) {}
 
-            if (!report.isHealthy) {
-                val detailError = buildString {
-                    if (report.exceptionType != null) {
-                        append("${report.exceptionType}: ${report.exceptionMessage}")
-                    } else if (report.httpStatusCode != null) {
-                        append("HTTP ${report.httpStatusCode} from ${report.healthEndpointUrl}")
-                    } else {
-                        append("Cannot connect to backend")
-                    }
-                }
-                _uiState.update {
-                    it.copy(
-                        isLoading = false,
-                        errorMessage = detailError
-                    )
-                }
-                return@launch
-            }
-
-            // 3. Register device using active API
-            val api = NetworkModule.getApiService(normalizedUrl)
-            val deviceRepo = DeviceRepository(api, prefs)
-            val registerUseCase = RegisterDeviceUseCase(prefs, deviceRepo)
-            val res = registerUseCase(name)
-
-            when (res) {
-                is Result.Success -> {
-                    prefs.saveDeviceName(name)
-                    prefs.setOnboardingComplete()
-                    _uiState.update { it.copy(isLoading = false, isRegistered = true) }
-                    onSuccess()
-                }
-                is Result.Error -> {
-                    _uiState.update {
-                        it.copy(
-                            isLoading = false,
-                            errorMessage = "Registration Failed: ${res.message}"
-                        )
-                    }
-                }
-            }
+            prefs.setOnboardingComplete()
+            _uiState.update { it.copy(isLoading = false, isRegistered = true) }
+            onSuccess()
         }
     }
 }
-
