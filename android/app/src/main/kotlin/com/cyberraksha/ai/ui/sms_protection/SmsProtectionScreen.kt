@@ -40,6 +40,12 @@ fun SmsProtectionScreen(
         viewModel.updateAccessMode(context)
     }
 
+    val smsPermissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestMultiplePermissions()
+    ) {
+        viewModel.updateAccessMode(context)
+    }
+
     LaunchedEffect(Unit) {
         viewModel.updateAccessMode(context)
     }
@@ -88,10 +94,13 @@ fun SmsProtectionScreen(
                 StatusBanner(
                     accessMode = state.accessMode,
                     onRequestRole = {
-                        val intent = SmsPermissionHelper.createRequestRoleIntent(context)
-                        if (intent != null) {
-                            roleLauncher.launch(intent)
-                        }
+                        // First request standard SMS runtime permissions for seamless background monitoring
+                        smsPermissionLauncher.launch(
+                            arrayOf(
+                                android.Manifest.permission.RECEIVE_SMS,
+                                android.Manifest.permission.READ_SMS
+                            )
+                        )
                     }
                 )
             }

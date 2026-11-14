@@ -99,6 +99,13 @@ data class HealthResponse(
     @SerializedName("timestamp")            val timestamp: String? = null
 )
 
+data class ThreatIndicatorDto(
+    @SerializedName("indicator_type")    val indicatorType: String = "DOMAIN",
+    @SerializedName("indicator_value")   val indicatorValue: String,
+    @SerializedName("threat_type")       val threatType: String? = null,
+    @SerializedName("severity")          val severity: String? = null
+)
+
 data class DetailedHealthComponent(
     @SerializedName("status")  val status: String,
     @SerializedName("message") val message: String?

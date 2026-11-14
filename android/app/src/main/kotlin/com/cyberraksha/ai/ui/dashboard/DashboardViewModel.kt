@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.cyberraksha.ai.core.AppPreferences
 import com.cyberraksha.ai.data.local.NotificationDao
+import com.cyberraksha.ai.data.local.ThreatIncidentDao
 import com.cyberraksha.ai.data.remote.NetworkModule
 import com.cyberraksha.ai.data.remote.ProtectionModulesStatus
 import com.cyberraksha.ai.data.remote.SecurityEventItem
@@ -27,6 +28,14 @@ data class DashboardUiState(
     val unreadCount: Int = 0,
     val criticalCount: Int = 0,
     val highCount: Int = 0,
+    val totalThreatsBlocked: Int = 0,
+    val smsThreatsCount: Int = 0,
+    val callThreatsCount: Int = 0,
+    val webThreatsCount: Int = 0,
+    val autonomousProtectionEnabled: Boolean = false,
+    val smsProtectionEnabled: Boolean = true,
+    val callProtectionEnabled: Boolean = true,
+    val webProtectionEnabled: Boolean = true,
     val lastSyncFormatted: String = "Never",
     val isRefreshing: Boolean = false,
     val protectionModules: ProtectionModulesStatus = ProtectionModulesStatus(),
@@ -37,7 +46,8 @@ data class DashboardUiState(
 
 class DashboardViewModel(
     private val prefs: AppPreferences,
-    private val notificationDao: NotificationDao
+    private val notificationDao: NotificationDao,
+    private val threatIncidentDao: ThreatIncidentDao
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(DashboardUiState())
@@ -55,9 +65,83 @@ class DashboardViewModel(
             _uiState.update { it.copy(deviceName = name, deviceId = id) }
 
             // Observe local unread notifications count
-            notificationDao.getUnreadCount().collect { count ->
-                _uiState.update { it.copy(unreadCount = count) }
+            launch {
+                notificationDao.getUnreadCount().collect { count ->
+                    _uiState.update { it.copy(unreadCount = count) }
+                }
             }
+
+            // Observe autonomous protection preferences
+            launch {
+                prefs.autonomousProtectionEnabled.collect { enabled ->
+                    _uiState.update { it.copy(autonomousProtectionEnabled = enabled) }
+                }
+            }
+            launch {
+                prefs.smsProtectionEnabled.collect { enabled ->
+                    _uiState.update { it.copy(smsProtectionEnabled = enabled) }
+                }
+            }
+            launch {
+                prefs.callProtectionEnabled.collect { enabled ->
+                    _uiState.update { it.copy(callProtectionEnabled = enabled) }
+                }
+            }
+            launch {
+                prefs.webProtectionEnabled.collect { enabled ->
+                    _uiState.update { it.copy(webProtectionEnabled = enabled) }
+                }
+            }
+
+            // Observe incident counters from Room DB
+            launch {
+                threatIncidentDao.getTotalIncidentCountFlow().collect { count ->
+                    _uiState.update { it.copy(totalThreatsBlocked = count) }
+                }
+            }
+            launch {
+                threatIncidentDao.getIncidentCountByTypeFlow("SMS").collect { count ->
+                    _uiState.update { it.copy(smsThreatsCount = count) }
+                }
+            }
+            launch {
+                threatIncidentDao.getIncidentCountByTypeFlow("CALL").collect { count ->
+                    _uiState.update { it.copy(callThreatsCount = count) }
+                }
+            }
+            launch {
+                threatIncidentDao.getIncidentCountByTypeFlow("WEB_DNS").collect { count ->
+                    _uiState.update { it.copy(webThreatsCount = count) }
+                }
+            }
+        }
+    }
+
+    fun toggleAutonomousProtection(enabled: Boolean) {
+        viewModelScope.launch {
+            prefs.setAutonomousProtectionEnabled(enabled)
+            _uiState.update { it.copy(autonomousProtectionEnabled = enabled) }
+        }
+    }
+
+    fun toggleSmsProtection(enabled: Boolean) {
+        viewModelScope.launch {
+            prefs.setSmsProtectionEnabled(enabled)
+            _uiState.update { it.copy(smsProtectionEnabled = enabled) }
+        }
+    }
+
+    fun toggleCallProtection(enabled: Boolean) {
+        viewModelScope.launch {
+            prefs.setCallProtectionEnabled(enabled)
+            _uiState.update { it.copy(callProtectionEnabled = enabled) }
+        }
+    }
+
+    fun toggleWebProtection(enabled: Boolean) {
+        viewModelScope.launch {
+            prefs.setWebProtectionEnabled(enabled)
+            _uiState.update { it.copy(webProtectionEnabled = enabled) }
         }
     }
 
@@ -156,4 +240,5 @@ class DashboardViewModel(
         }
     }
 }
+
 

@@ -76,3 +76,4 @@ Tested with `node browser_extension/tests/test_c31_real_time_protection.js`:
    - **Version:** 1.3.0
    - **Status:** Enabled
 7. Click the toolbar icon to view the real-time popup interface showing live cloud backend connectivity.
+

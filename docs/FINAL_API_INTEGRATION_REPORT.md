@@ -72,3 +72,4 @@ access-control-allow-headers: *
 access-control-allow-credentials: true
 ```
 Strict regex matches `^https:\/\/[a-zA-Z0-9\-_.]+\.vercel\.app$` ensuring verified Vercel production and preview subdomains are accepted without allowing arbitrary third-party origins.
+

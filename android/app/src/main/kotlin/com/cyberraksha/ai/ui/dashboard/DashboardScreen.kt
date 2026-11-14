@@ -1,5 +1,11 @@
 package com.cyberraksha.ai.ui.dashboard
 
+import android.Manifest
+import android.app.Activity
+import android.content.pm.PackageManager
+import android.net.VpnService
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -14,15 +20,19 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.content.ContextCompat
 import androidx.room.Room
 import com.cyberraksha.ai.core.AppPreferences
 import com.cyberraksha.ai.data.local.AppDatabase
 import com.cyberraksha.ai.data.remote.SecurityEventItem
+import com.cyberraksha.ai.ui.call_protection.CallScreeningHelper
 import com.cyberraksha.ai.ui.theme.*
+import com.cyberraksha.ai.vpn.CyberRakshaDnsVpnService
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -42,8 +52,71 @@ fun DashboardScreen(
             "cyber_raksha_db"
         ).fallbackToDestructiveMigration().build()
     }
-    val viewModel = remember { DashboardViewModel(prefs, db.notificationDao()) }
+    val viewModel = remember { DashboardViewModel(prefs, db.notificationDao(), db.threatIncidentDao()) }
     val state by viewModel.uiState.collectAsState()
+
+    val vpnLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        if (result.resultCode == Activity.RESULT_OK) {
+            CyberRakshaDnsVpnService.start(context)
+            viewModel.toggleWebProtection(true)
+        }
+    }
+
+    val smsPermissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestMultiplePermissions()
+    ) { permissions ->
+        val smsGranted = permissions[Manifest.permission.RECEIVE_SMS] == true
+        if (smsGranted) {
+            viewModel.toggleSmsProtection(true)
+        }
+    }
+
+    val callRoleLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.StartActivityForResult()
+    ) {
+        viewModel.toggleCallProtection(true)
+    }
+
+    fun enableProtection() {
+        // 1. Request SMS permission if not already granted
+        val hasSms = ContextCompat.checkSelfPermission(
+            context,
+            Manifest.permission.RECEIVE_SMS
+        ) == PackageManager.PERMISSION_GRANTED
+        if (!hasSms) {
+            smsPermissionLauncher.launch(
+                arrayOf(
+                    Manifest.permission.RECEIVE_SMS,
+                    Manifest.permission.READ_SMS
+                )
+            )
+        }
+
+        // 2. Request Call Screening role if available and not held
+        val callIntent = CallScreeningHelper.createRequestRoleIntent(context)
+        if (callIntent != null && CallScreeningHelper.getScreeningStatus(context) != com.cyberraksha.ai.ui.call_protection.CallScreeningStatus.ACTIVE) {
+            callRoleLauncher.launch(callIntent)
+        }
+
+        // 3. Prepare & start local DNS VPN filter
+        val vpnIntent = VpnService.prepare(context)
+        if (vpnIntent != null) {
+            vpnLauncher.launch(vpnIntent)
+        } else {
+            CyberRakshaDnsVpnService.start(context)
+            viewModel.toggleWebProtection(true)
+        }
+
+        viewModel.toggleAutonomousProtection(true)
+    }
+
+    fun disableProtection() {
+        CyberRakshaDnsVpnService.stop(context)
+        viewModel.toggleWebProtection(false)
+        viewModel.toggleAutonomousProtection(false)
+    }
 
     Scaffold(
         topBar = {
@@ -115,7 +188,21 @@ fun DashboardScreen(
                 }
             }
 
-            // Card 1: Protection Status
+            // Card 0: Master Autonomous Protection Toggle Card
+            item {
+                MasterProtectionCard(
+                    isProtected = state.autonomousProtectionEnabled,
+                    onToggleProtection = { shouldEnable ->
+                        if (shouldEnable) {
+                            enableProtection()
+                        } else {
+                            disableProtection()
+                        }
+                    }
+                )
+            }
+
+            // Card 1: Device Status
             item {
                 ProtectionStatusCard(
                     deviceName = state.deviceName,
@@ -127,19 +214,23 @@ fun DashboardScreen(
                 )
             }
 
-            // Card 2: Security Overview
+            // Card 2: Security Overview (Dynamic Threat Counters)
             item {
                 SecurityOverviewCard(
-                    unreadAlerts = state.unreadCount,
-                    criticalCount = state.criticalCount,
-                    highCount = state.highCount,
+                    totalBlocked = state.totalThreatsBlocked,
+                    smsThreats = state.smsThreatsCount,
+                    callThreats = state.callThreatsCount,
+                    webThreats = state.webThreatsCount,
                     onClickAlerts = onNavigateToAlerts
                 )
             }
 
-            // Card 3: Protection Modules
+            // Card 3: Defense Capabilities / Protection Modules
             item {
                 ProtectionModulesCard(
+                    smsActive = state.smsProtectionEnabled,
+                    callActive = state.callProtectionEnabled,
+                    webActive = state.webProtectionEnabled,
                     onOpenSms = onNavigateToSmsProtection,
                     onOpenCall = onNavigateToCallProtection,
                     onOpenHistory = onNavigateToThreatHistory
@@ -197,6 +288,7 @@ fun DashboardScreen(
         }
     }
 }
+
 
 @Composable
 private fun OfflineBanner(
@@ -391,10 +483,114 @@ private fun ProtectionStatusCard(
 }
 
 @Composable
+private fun MasterProtectionCard(
+    isProtected: Boolean,
+    onToggleProtection: (Boolean) -> Unit
+) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(
+            containerColor = if (isProtected) Color(0xFF0F2B26) else DarkSurface
+        ),
+        shape = RoundedCornerShape(16.dp),
+        border = CardDefaults.outlinedCardBorder().copy(
+            brush = androidx.compose.ui.graphics.SolidColor(
+                if (isProtected) SeverityLow else DarkOutline
+            )
+        )
+    ) {
+        Column(modifier = Modifier.padding(18.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.weight(1f)
+                ) {
+                    Icon(
+                        imageVector = if (isProtected) Icons.Default.Security else Icons.Default.Shield,
+                        contentDescription = null,
+                        tint = if (isProtected) SeverityLow else TextSecondary,
+                        modifier = Modifier.size(32.dp)
+                    )
+                    Spacer(modifier = Modifier.width(12.dp))
+                    Column {
+                        Text(
+                            text = "AUTONOMOUS PROTECTION",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = if (isProtected) SeverityLow else TextPrimary
+                        )
+                        Text(
+                            text = if (isProtected) "Live AI Fraud Interception Active" else "Protection Inactive • Tap to Enable",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = TextSecondary
+                        )
+                    }
+                }
+                Switch(
+                    checked = isProtected,
+                    onCheckedChange = { onToggleProtection(it) },
+                    colors = SwitchDefaults.colors(
+                        checkedThumbColor = DarkBackground,
+                        checkedTrackColor = SeverityLow,
+                        uncheckedThumbColor = TextSecondary,
+                        uncheckedTrackColor = DarkOutline
+                    )
+                )
+            }
+
+            Spacer(modifier = Modifier.height(10.dp))
+            HorizontalDivider(color = if (isProtected) SeverityLow.copy(alpha = 0.3f) else DarkOutline)
+            Spacer(modifier = Modifier.height(10.dp))
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                StatusPill("SMS Shield", isProtected)
+                StatusPill("Call Screener", isProtected)
+                StatusPill("DNS Sinkhole", isProtected)
+            }
+        }
+    }
+}
+
+@Composable
+private fun StatusPill(label: String, active: Boolean) {
+    Surface(
+        color = if (active) SeverityLow.copy(alpha = 0.15f) else DarkBackground,
+        shape = RoundedCornerShape(8.dp)
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(6.dp)
+                    .clip(CircleShape)
+                    .background(if (active) SeverityLow else TextSecondary)
+            )
+            Spacer(modifier = Modifier.width(5.dp))
+            Text(
+                text = label,
+                fontSize = 11.sp,
+                fontWeight = FontWeight.Medium,
+                color = if (active) SeverityLow else TextSecondary
+            )
+        }
+    }
+}
+
+@Composable
 private fun SecurityOverviewCard(
-    unreadAlerts: Int,
-    criticalCount: Int,
-    highCount: Int,
+    totalBlocked: Int,
+    smsThreats: Int,
+    callThreats: Int,
+    webThreats: Int,
     onClickAlerts: () -> Unit
 ) {
     Card(
@@ -405,21 +601,33 @@ private fun SecurityOverviewCard(
         shape = RoundedCornerShape(16.dp)
     ) {
         Column(modifier = Modifier.padding(18.dp)) {
-            Text(
-                text = "Security Overview",
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.SemiBold,
-                color = TextPrimary
-            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "Security Overview",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.SemiBold,
+                    color = TextPrimary
+                )
+                Text(
+                    text = "Live Telemetry",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = CyberCyan
+                )
+            }
             Spacer(modifier = Modifier.height(14.dp))
 
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceAround
+                horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                MetricItem(label = "Unread Alerts", count = "$unreadAlerts", color = CyberCyan)
-                MetricItem(label = "Critical", count = "$criticalCount", color = SeverityCritical)
-                MetricItem(label = "High Priority", count = "$highCount", color = SeverityHigh)
+                MetricItem(label = "Threats Intercepted", count = "$totalBlocked", color = SeverityCritical)
+                MetricItem(label = "SMS Scams", count = "$smsThreats", color = SeverityHigh)
+                MetricItem(label = "Call Scams", count = "$callThreats", color = CyberCyan)
+                MetricItem(label = "Phishing Sites", count = "$webThreats", color = TextPrimary)
             }
         }
     }
@@ -430,7 +638,7 @@ private fun MetricItem(label: String, count: String, color: androidx.compose.ui.
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
         Text(
             text = count,
-            fontSize = 26.sp,
+            fontSize = 24.sp,
             fontWeight = FontWeight.Bold,
             color = color
         )
@@ -438,13 +646,17 @@ private fun MetricItem(label: String, count: String, color: androidx.compose.ui.
         Text(
             text = label,
             style = MaterialTheme.typography.labelSmall,
-            color = TextSecondary
+            color = TextSecondary,
+            fontSize = 10.sp
         )
     }
 }
 
 @Composable
 private fun ProtectionModulesCard(
+    smsActive: Boolean,
+    callActive: Boolean,
+    webActive: Boolean,
     onOpenSms: () -> Unit,
     onOpenCall: () -> Unit,
     onOpenHistory: () -> Unit
@@ -461,7 +673,7 @@ private fun ProtectionModulesCard(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = "Defense Capabilities",
+                    text = "Autonomous Defense Vectors",
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.SemiBold,
                     color = TextPrimary
@@ -472,12 +684,11 @@ private fun ProtectionModulesCard(
             }
             Spacer(modifier = Modifier.height(10.dp))
 
-            ModuleRow("Browser Protection", "DeclarativeNetRequest Active", true)
-            ModuleRow("Threat Intelligence", "Automatic Sync Active (URLhaus)", true)
-            ModuleRow("Security Notifications", "Intelligent Engine Active", true)
-            ModuleRow("Mobile Protection Layer", "Phase B1 Foundation Active", true)
-            ModuleRow("SMS Scam Interceptor", "Phase B2 Active • Tap to Scan", true, onClick = onOpenSms)
-            ModuleRow("Call Fraud Shield", "Phase B2 Active • Tap to Screen", true, onClick = onOpenCall)
+            ModuleRow("SMS Scam Guard", "Telephony BroadcastReceiver Active", smsActive, onClick = onOpenSms)
+            ModuleRow("Fraud Call Screener", "Android CallScreeningService Active", callActive, onClick = onOpenCall)
+            ModuleRow("DNS Phishing Sinkhole", "Local UDP 53 VpnService Active", webActive)
+            ModuleRow("Instant Share Scanner", "Target for WhatsApp & Browser links", true)
+            ModuleRow("Threat Intel Engine", "URLhaus & OpenPhish Synced", true)
         }
     }
 }

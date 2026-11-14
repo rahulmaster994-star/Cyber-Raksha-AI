@@ -23,6 +23,10 @@ class AppPreferences(private val context: Context) {
         val KEY_LAST_SYNC = longPreferencesKey("last_sync_timestamp")
         val KEY_NOTIFICATIONS_ENABLED = booleanPreferencesKey("notifications_enabled")
         val KEY_MIN_SEVERITY = stringPreferencesKey("min_severity")
+        val KEY_AUTONOMOUS_PROTECTION = booleanPreferencesKey("autonomous_protection_enabled")
+        val KEY_SMS_PROTECTION = booleanPreferencesKey("sms_protection_enabled")
+        val KEY_CALL_PROTECTION = booleanPreferencesKey("call_protection_enabled")
+        val KEY_WEB_PROTECTION = booleanPreferencesKey("web_protection_enabled")
         const val DEFAULT_BACKEND_URL = "https://cyberraksha-backend.onrender.com"
     }
 
@@ -44,6 +48,10 @@ class AppPreferences(private val context: Context) {
     val lastSyncTimestamp: Flow<Long> = context.dataStore.data.map { it[KEY_LAST_SYNC] ?: 0L }
     val notificationsEnabled: Flow<Boolean> = context.dataStore.data.map { it[KEY_NOTIFICATIONS_ENABLED] ?: true }
     val minSeverity: Flow<String> = context.dataStore.data.map { it[KEY_MIN_SEVERITY] ?: "LOW" }
+    val autonomousProtectionEnabled: Flow<Boolean> = context.dataStore.data.map { it[KEY_AUTONOMOUS_PROTECTION] ?: true }
+    val smsProtectionEnabled: Flow<Boolean> = context.dataStore.data.map { it[KEY_SMS_PROTECTION] ?: true }
+    val callProtectionEnabled: Flow<Boolean> = context.dataStore.data.map { it[KEY_CALL_PROTECTION] ?: true }
+    val webProtectionEnabled: Flow<Boolean> = context.dataStore.data.map { it[KEY_WEB_PROTECTION] ?: true }
 
     suspend fun saveDeviceId(id: String) = context.dataStore.edit { it[KEY_DEVICE_ID] = id }
     suspend fun saveDeviceName(name: String) = context.dataStore.edit { it[KEY_DEVICE_NAME] = name }
@@ -55,5 +63,9 @@ class AppPreferences(private val context: Context) {
     suspend fun updateLastSync() = context.dataStore.edit { it[KEY_LAST_SYNC] = System.currentTimeMillis() }
     suspend fun setNotificationsEnabled(enabled: Boolean) = context.dataStore.edit { it[KEY_NOTIFICATIONS_ENABLED] = enabled }
     suspend fun setMinSeverity(severity: String) = context.dataStore.edit { it[KEY_MIN_SEVERITY] = severity }
+    suspend fun setAutonomousProtectionEnabled(enabled: Boolean) = context.dataStore.edit { it[KEY_AUTONOMOUS_PROTECTION] = enabled }
+    suspend fun setSmsProtectionEnabled(enabled: Boolean) = context.dataStore.edit { it[KEY_SMS_PROTECTION] = enabled }
+    suspend fun setCallProtectionEnabled(enabled: Boolean) = context.dataStore.edit { it[KEY_CALL_PROTECTION] = enabled }
+    suspend fun setWebProtectionEnabled(enabled: Boolean) = context.dataStore.edit { it[KEY_WEB_PROTECTION] = enabled }
 }
 

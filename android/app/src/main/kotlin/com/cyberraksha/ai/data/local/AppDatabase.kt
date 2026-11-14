@@ -4,11 +4,17 @@ import androidx.room.Database
 import androidx.room.RoomDatabase
 
 @Database(
-    entities = [NotificationEntity::class, SyncStateEntity::class, SmsAnalysisEntity::class],
-    version = 2,
+    entities = [
+        NotificationEntity::class,
+        SyncStateEntity::class,
+        SmsAnalysisEntity::class,
+        ThreatIncidentEntity::class
+    ],
+    version = 3,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
     abstract fun notificationDao(): NotificationDao
     abstract fun smsAnalysisDao(): SmsAnalysisDao
+    abstract fun threatIncidentDao(): ThreatIncidentDao
 }

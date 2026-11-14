@@ -119,3 +119,8 @@ dependencies {
   androidTestImplementation(libs.workmanager.testing)
   debugImplementation(libs.androidx.compose.ui.test.manifest)
 }
+
+tasks.withType<Test> {
+  doNotTrackState("Avoid OneDrive file lock / snapshot conflict on Windows")
+}
+

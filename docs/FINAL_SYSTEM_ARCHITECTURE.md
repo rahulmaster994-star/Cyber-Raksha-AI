@@ -114,3 +114,4 @@ Cyber Raksha AI operates as a unified, multi-vector cybersecurity platform safeg
 - Hosted on Render Free Web Service with Python 3.11.9 and Docker runtime.
 - Powered by Neon Serverless PostgreSQL with SSL connection pooling (`pool_size=10`, `max_overflow=20`, `pool_pre_ping=True`).
 - Resilient fallback to SQLite for local isolated development.
+

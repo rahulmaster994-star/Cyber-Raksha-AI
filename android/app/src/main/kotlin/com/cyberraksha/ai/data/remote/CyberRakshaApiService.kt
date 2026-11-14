@@ -98,5 +98,8 @@ interface CyberRakshaApiService {
     suspend fun reportSecurityEvent(
         @Body request: SecurityEventApiRequest
     ): Response<SecurityEventApiResponse>
+
+    @GET("api/v1/threat-intel/indicators")
+    suspend fun getThreatIndicators(): Response<List<ThreatIndicatorDto>>
 }
 

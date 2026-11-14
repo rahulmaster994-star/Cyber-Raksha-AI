@@ -489,19 +489,14 @@ def test_b21_19_report_threat_rate_limit(client: TestClient):
 
 def test_b21_20_sms_reception_capability_audit():
     """
-    Task A Verification: Conclusively asserts that automatic background SMS interception
-    via BroadcastReceiver / READ_SMS is NOT implemented in Phase B2.1.
-    Only Feature 1 (User-submitted pasted SMS analysis) is supported.
+    Phase C Autonomous Protection: Asserts that automatic incoming SMS monitoring
+    via CyberRakshaSmsReceiver is properly protected with BROADCAST_SMS permission in AndroidManifest.xml.
     """
     import os
     android_manifest = "android/app/src/main/AndroidManifest.xml"
     if os.path.exists(android_manifest):
         with open(android_manifest, "r", encoding="utf-8") as f:
             content = f.read()
-        # Assert no SMS receiver registered
-        assert "android.provider.Telephony.SMS_RECEIVED" not in content, (
-            "Automatic SMS_RECEIVED action should not be registered in manifest without default SMS role"
-        )
-        assert "<receiver" not in content or "SmsReceiver" not in content, (
-            "No SmsReceiver should be active"
-        )
+        assert "CyberRakshaSmsReceiver" in content
+        assert "android.permission.BROADCAST_SMS" in content
+

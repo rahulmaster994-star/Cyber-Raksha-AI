@@ -67,3 +67,4 @@ Vercel production build executed with zero errors:
   - Vercel: 100 GB bandwidth / month.
   - Neon: 0.5 GiB storage, auto-suspend compute.
 - No paid third-party threat intelligence or cloud APIs introduced.
+
