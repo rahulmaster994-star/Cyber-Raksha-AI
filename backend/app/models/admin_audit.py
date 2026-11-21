@@ -22,3 +22,4 @@ class AdminAuditLog(Base):
 
     def __repr__(self) -> str:
         return f"<AdminAuditLog id={self.id} action={self.action} admin={self.admin_identifier}>"
+
