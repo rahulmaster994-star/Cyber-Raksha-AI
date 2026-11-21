@@ -39,7 +39,11 @@ type AdminTab =
   | 'models'
   | 'diagnostics_audit';
 
-export const AdminPage: React.FC = () => {
+interface AdminPageProps {
+  onNavigateToPublic?: (tab?: string) => void;
+}
+
+export const AdminPage: React.FC<AdminPageProps> = ({ onNavigateToPublic }) => {
   const [adminKey, setAdminKey] = useState<string>(() => {
     return sessionStorage.getItem('cyber_raksha_admin_key') || '';
   });
@@ -375,20 +379,20 @@ export const AdminPage: React.FC = () => {
     }
   };
 
-  // Render Login Wall if not authenticated
+  // Render Login Wall if not authenticated (Full Screen SOC Gate)
   if (!isAuthenticated) {
     return (
-      <div className="min-h-[85vh] flex items-center justify-center px-4 py-12">
-        <div className="w-full max-w-md bg-[#070D1E]/95 border border-[#1E2E5C] rounded-2xl p-8 shadow-[0_0_50px_rgba(0,240,255,0.15)] backdrop-blur-xl">
+      <div className="min-h-screen w-full flex items-center justify-center px-4 py-12 bg-[#050811] cyber-grid relative">
+        <div className="w-full max-w-md bg-[#070D1E]/95 border border-[#1E2E5C] rounded-2xl p-8 shadow-[0_0_50px_rgba(0,240,255,0.15)] backdrop-blur-xl relative z-10">
           <div className="flex flex-col items-center mb-6">
             <div className="w-16 h-16 rounded-xl bg-gradient-to-br from-cyan-500/20 to-blue-600/30 border border-cyan-400/40 flex items-center justify-center shadow-[0_0_20px_rgba(0,240,255,0.3)] mb-4">
               <ShieldAlert className="w-8 h-8 text-cyan-400" />
             </div>
-            <h1 className="text-xl font-bold tracking-wider text-white uppercase cyber-glow-text">
-              SOC Control Room
+            <h1 className="text-xl font-bold tracking-wider text-white uppercase cyber-glow-text text-center">
+              Cyber Raksha AI SOC
             </h1>
-            <p className="text-xs text-slate-400 font-mono tracking-widest mt-1">
-              AUTHORIZED SECURITY PERSONNEL ONLY
+            <p className="text-xs text-slate-400 font-mono tracking-widest mt-1 text-center">
+              PRIVATE SECURITY OPERATIONS CONTROL ROOM
             </p>
           </div>
 
@@ -475,19 +479,30 @@ export const AdminPage: React.FC = () => {
             </form>
           )}
 
-          <div className="mt-6 pt-4 border-t border-slate-800 text-center">
+          <div className="mt-6 pt-4 border-t border-slate-800 text-center space-y-2">
             <p className="text-[11px] text-slate-500">
               Audit logging active. All administrative actions are recorded with IP, timestamp and caller identity.
             </p>
+            {onNavigateToPublic && (
+              <div className="pt-2">
+                <button
+                  type="button"
+                  onClick={() => onNavigateToPublic('landing')}
+                  className="text-[11px] font-mono text-slate-500 hover:text-cyan-400 transition-colors inline-flex items-center gap-1 cursor-pointer"
+                >
+                  <span>&larr; Switch to Citizen Protection Portal</span>
+                </button>
+              </div>
+            )}
           </div>
         </div>
       </div>
     );
   }
 
-  // Authenticated SOC Control Room
+  // Authenticated Full-Screen SOC Control Room
   return (
-    <div className="min-h-screen bg-[#050811] text-slate-200 py-6 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen w-full bg-[#050811] text-slate-200 py-6 px-4 sm:px-6 lg:px-8">
       {/* Toast Notification */}
       {toastMessage && (
         <div className="fixed bottom-6 right-6 z-50 px-4 py-2.5 rounded-lg bg-cyan-900/90 border border-cyan-400/60 text-cyan-200 text-sm shadow-[0_0_20px_rgba(0,240,255,0.3)] backdrop-blur-md flex items-center gap-2">
@@ -518,16 +533,25 @@ export const AdminPage: React.FC = () => {
         </div>
 
         <div className="flex items-center gap-3">
+          {onNavigateToPublic && (
+            <button
+              onClick={() => onNavigateToPublic('landing')}
+              className="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs font-mono text-slate-300 hover:text-white border border-slate-700 flex items-center gap-1.5 transition-colors cursor-pointer"
+              title="Open Public Citizen Protection Portal"
+            >
+              <span>Citizen Portal &rarr;</span>
+            </button>
+          )}
           <button
             onClick={() => loadCurrentTabData(activeTab, adminKey)}
-            className="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs font-mono text-cyan-300 border border-slate-700 flex items-center gap-1.5 transition-colors"
+            className="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs font-mono text-cyan-300 border border-slate-700 flex items-center gap-1.5 transition-colors cursor-pointer"
           >
             <RefreshCw className="w-3.5 h-3.5" />
             <span>SYNC DATA</span>
           </button>
           <button
             onClick={handleLogout}
-            className="px-3 py-1.5 rounded-lg bg-rose-500/20 hover:bg-rose-500/30 text-xs font-mono text-rose-300 border border-rose-500/40 flex items-center gap-1.5 transition-colors"
+            className="px-3 py-1.5 rounded-lg bg-rose-500/20 hover:bg-rose-500/30 text-xs font-mono text-rose-300 border border-rose-500/40 flex items-center gap-1.5 transition-colors cursor-pointer"
           >
             <Lock className="w-3.5 h-3.5" />
             <span>TERMINATE SESSION</span>
