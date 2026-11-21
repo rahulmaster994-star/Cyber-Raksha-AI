@@ -164,5 +164,61 @@ interface CyberRakshaApiService {
         @Header("Authorization") bearerToken: String?,
         @Body request: CommunityReportRequestDto
     ): Response<CommunityReportResponseDto>
+
+    // ── Keypad User Protection System (Elderly Guardian Shield) ───────────
+
+    @POST("api/v1/keypad/family")
+    suspend fun registerKeypadElderlyMember(
+        @Header("Authorization") bearerToken: String?,
+        @Body request: KeypadElderlyUserCreateDto
+    ): Response<KeypadElderlyUserResponseDto>
+
+    @GET("api/v1/keypad/family")
+    suspend fun listKeypadElderlyMembers(
+        @Header("Authorization") bearerToken: String?
+    ): Response<List<KeypadElderlyUserResponseDto>>
+
+    @DELETE("api/v1/keypad/family/{elderlyId}")
+    suspend fun removeKeypadElderlyMember(
+        @Header("Authorization") bearerToken: String?,
+        @Path("elderlyId") elderlyId: Int
+    ): Response<Map<String, String>>
+
+    @POST("api/v1/keypad/check-sms")
+    suspend fun checkKeypadSms(
+        @Header("Authorization") bearerToken: String?,
+        @Body request: KeypadSmsCheckRequestDto
+    ): Response<KeypadSmsCheckResponseDto>
+
+    @POST("api/v1/keypad/check-call")
+    suspend fun checkKeypadCall(
+        @Header("Authorization") bearerToken: String?,
+        @Body request: KeypadCallCheckRequestDto
+    ): Response<KeypadCallCheckResponseDto>
+
+    @POST("api/v1/keypad/report-scam")
+    suspend fun reportKeypadScamNumber(
+        @Header("Authorization") bearerToken: String?,
+        @Body request: KeypadScamNumberReportRequestDto
+    ): Response<KeypadScamNumberReportResponseDto>
+
+    @GET("api/v1/keypad/alerts")
+    suspend fun getKeypadAlerts(
+        @Header("Authorization") bearerToken: String?
+    ): Response<KeypadAlertSummaryResponseDto>
+
+    @POST("api/v1/keypad/alerts/{incidentId}/acknowledge")
+    suspend fun acknowledgeKeypadAlert(
+        @Header("Authorization") bearerToken: String?,
+        @Path("incidentId") incidentId: Int
+    ): Response<Map<String, String>>
+
+    @GET("api/v1/keypad/education")
+    suspend fun getKeypadEducation(
+        @Query("lang") language: String = "en"
+    ): Response<KeypadEducationResponseDto>
+
+    @GET("api/v1/keypad/helpdesks")
+    suspend fun getKeypadHelpdesks(): Response<KeypadOfficialHelpdeskResponseDto>
 }
 

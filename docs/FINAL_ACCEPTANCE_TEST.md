@@ -28,13 +28,20 @@ This document provides the formal record of the 20 end-to-end acceptance test sc
 | **TC-18** | Incident Number Collision Resistance | Concurrent incident generation from high-frequency events | Unique incident numbers assigned using retry loop (1000–999999) | Zero unique constraint violations under stress | **PASS** |
 | **TC-19** | Backend Test Suite Completeness | `pytest backend/tests` | All 371 unit, integration, and security tests pass | `371 passed, 2 warnings in 36.04s` | **PASS** |
 | **TC-20** | Continuous Integration Pipeline | GitHub Actions workflow on `main` push | Automated checkout, Python dependency installation, Pytest suite, Frontend build | Triggered and active on GitHub Actions (`.github/workflows/ci.yml`) | **PASS** |
+| **TC-21** | Keypad Family Dependent Registration | `POST /api/v1/keypad/family` with elder details & consent | E.164 normalization, guardian association, masked mobile number | `full_name: "Ramesh Sharma"`, `mobile: "+919845012345"`, `masked: "+91******2345"`, `status: 201` | **PASS** |
+| **TC-22** | Keypad SMS Threat Analysis | `POST /api/v1/keypad/check-sms` with Digital Arrest & Electricity scam text | Category classified, risk score >= 40, non-automatic disclaimer returned | `category: "DIGITAL_ARREST"`, `risk_level: "HIGH"`, `is_automatic_detection: false` | **PASS** |
+| **TC-23** | Keypad Call Reputation & Anti-Sybil Guard | `POST /api/v1/keypad/check-call` & `POST /api/v1/keypad/report-scam` | Single unverified report caps at MEDIUM; 2+ reports escalate to CORROBORATED | Single report: `verification_status: "COMMUNITY_UNVERIFIED"`, `risk: "MEDIUM"`; Multi-report: `CORROBORATED` | **PASS** |
+| **TC-24** | Keypad Guardian Alerts & Acknowledgment | `GET /api/v1/keypad/alerts` & `POST /api/v1/keypad/alerts/{id}/acknowledge` | Metrics returned, real incident history, acknowledgment status updated | Incident tracked, `is_acknowledged: true` upon review | **PASS** |
+| **TC-25** | Multilingual Elderly Education | `GET /api/v1/keypad/education?lang=en|hi|kn` | Complete localization of Golden Rule, Never Share items, 5 scam guides in EN, HI, KN | Kannada: `ಸುವರ್ಣ ನಿಯಮ`, Hindi: `स्वर्ण नियम`, English: `GOLDEN RULE`, 5 scams each | **PASS** |
+| **TC-26** | Official Government Helplines & Portals | `GET /api/v1/keypad/helpdesks` | Direct links to Chakshu, 1930, 1909, 112 with legal non-blocking clarification | Sanchar Saathi (Chakshu), 1930, 1909, 112 present; carrier reporting distinction clarified | **PASS** |
+| **TC-27** | Android Keypad Repository & UI Integration | `KeypadProtectionRepositoryTest` & Compose compilation | Kotlin unit tests pass; Compose navigation and dashboard card wired | `KeypadProtectionRepositoryTest`: 4/4 passed, `BUILD SUCCESSFUL in 2m 5s` | **PASS** |
 
 ---
 
 ## Verification Summary
 
-- **Total Scenarios Evaluated**: 20
-- **Passed**: 20
+- **Total Scenarios Evaluated**: 27
+- **Passed**: 27
 - **Failed**: 0
 - **Overall System Readiness**: 100% Production Ready
 - **Authoritative Date**: November 2026

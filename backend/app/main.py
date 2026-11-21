@@ -43,6 +43,7 @@ from app.api.routes.dashboard import router as dashboard_router
 from app.api.routes.auth import router as auth_router
 from app.api.routes.complaints import router as complaints_router
 from app.api.routes.community import router as community_router
+from app.api.routes.keypad_protection import router as keypad_router
 from app.schemas.system import RootResponse
 
 
@@ -201,6 +202,7 @@ app.include_router(dashboard_router, prefix="/api")
 app.include_router(auth_router, prefix="/api")
 app.include_router(complaints_router, prefix="/api")
 app.include_router(community_router, prefix="/api")
+app.include_router(keypad_router, prefix="/api")
 
 # Versioned /api/v1 routes for Stages 2 through 9
 app.include_router(health_router, prefix="/api/v1")
@@ -224,3 +226,4 @@ app.include_router(dashboard_router, prefix="/api/v1")
 app.include_router(auth_router, prefix="/api/v1")
 app.include_router(complaints_router, prefix="/api/v1")
 app.include_router(community_router, prefix="/api/v1")
+app.include_router(keypad_router, prefix="/api/v1")

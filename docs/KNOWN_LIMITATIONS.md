@@ -1,58 +1,63 @@
-# CYBER RAKSHA AI — KNOWN LIMITATIONS & OPERATIONAL BOUNDARIES
-## Technical Transparency & Free-Tier Operational Constraints
+# Cyber Raksha AI - Known Technical Limitations
 
-**Date:** 2026-11-14  
-**Classification:** Engineering Transparency Specification  
+This document provides a rigorous, technically honest breakdown of the physical, architectural, and telecommunication boundaries governing the **Keypad User Protection System** in Cyber Raksha AI.
 
 ---
 
-## 1. Cloud & Hosting Free-Tier Constraints
+## 1. Traditional Keypad Phone Operating Environment
 
-### 1.1 Render Free Web Service Spin-Down (Cold Starts)
-- **Constraint:** Render spins down free web services after 15 minutes of inbound request inactivity.
-- **Impact:** The first request after spin-down incurs a cold-start initialization delay of approximately 25–40 seconds while the container and ML model weights reload into RAM.
-- **Mitigation & Handling:**
-  - The Chromium browser extension enforces a strict 1,800 ms timeout ceiling (`AbortController`) on live queries. If the backend is cold or booting, the extension fails open (`allowNavigation`) and logs `OFFLINE_FALLBACK`, ensuring the user's web browsing is never hung or frozen.
-  - Pre-installed DNR rules continue to protect against confirmed threats during cold starts.
-  - The React frontend displays an active cold-start indicator and retry countdown for user transparency.
+### Target Devices
+- **Hardware:** Nokia 105, Samsung Guru 1200, itel 2163, Lava A1, Jio Bharat, etc.
+- **Operating Systems:** RTOS (Real-Time Operating Systems) such as MediaTek Nucleus OS, Spreadtrum MOCOR OS, or KaiOS (in limited 4G variants).
 
-### 1.2 Neon Serverless PostgreSQL Compute Suspension
-- **Constraint:** Neon scales compute to zero after 5 minutes of inactivity on free tier.
-- **Impact:** Initial database wake-up takes ~1.5 seconds.
-- **Mitigation:** The backend uses SQLAlchemy connection pre-pinging (`pool_pre_ping=True`) to automatically handle compute reconnection without raising 500 errors.
-
----
-
-## 2. Browser Extension Constraints (Chromium Manifest V3)
-
-### 2.1 Asynchronous Navigation Semantics
-- **Constraint:** In Chrome Manifest V3, `chrome.webNavigation.onBeforeNavigate` is an asynchronous event notification, not a synchronous cancellation gate (unlike legacy blocking `webRequest` in MV2).
-- **Impact:** For unknown destinations not present in pre-installed DNR rules, remote cloud classification runs asynchronously while the initial network connection begins.
-- **Mitigation & Truthful Disclosure:**
-  - Known threat feeds are pre-compiled into Chromium Declarative Net Request rules, which block network connections before connection.
-  - Unknown URLs evaluated in-flight are quarantined by immediately redirecting the tab to `warning.html` and compiling dynamic network-quarantine rules for all subsequent origin subresources.
-
-### 2.2 DNR Dynamic Rule Ceilings
-- **Constraint:** Chromium caps dynamic rules at 5,000 rules and dynamic regex rules at 1,000 rules per extension.
-- **Mitigation:** Cyber Raksha AI's `rules_manager.js` enforces a safe cap of 900 rules (`MAX_DYNAMIC_RULES`), with differential deduplication and least-recent indicator eviction.
+### Inherent Constraints
+1. **No Third-Party Application Execution:**
+   - Standard 2G/4G feature phones do not possess an application store, Java ME / MIDP runtime, or APK execution environment.
+   - Users cannot install Cyber Raksha AI or any agent software onto the keypad phone itself.
+2. **No Background Daemons or System Hooking:**
+   - RTOS architectures do not permit background daemons, accessibility services, or notification listener hooks.
+3. **No Dynamic Telephony API Access:**
+   - Even on phones that run basic J2ME or KaiOS, the core telephony stack (radio interface layer) is proprietary and closed to third-party code for security and regulatory reasons.
 
 ---
 
-## 3. Mobile Telephony & Android Platform Constraints
+## 2. Cellular Network Architecture & Radio Protocols (3GPP)
 
-### 3.1 CallScreeningService System Role Requirements
-- **Constraint:** On Android 10+ (API 29+), `CallScreeningService` operates only when the user explicitly grants the application the **Default Caller ID & Spam** system role in Android settings.
-- **Mitigation:** The application provides an onboarding prompt requesting this role and gracefully indicates `STANDBY` if the user elects not to enable telecom call screening.
+### Why Automatic Call/SMS Interception Is Physically Impossible Without Telecom Operator Core Integration
 
-### 3.2 Telecom Framework Response Time Budget
-- **Constraint:** Android Telecom subsystem requires `respondToCall()` within approximately 5 seconds, otherwise the call is automatically allowed by the OS.
-- **Mitigation:** `CyberRakshaCallScreeningService` enforces a strict 3,000 ms coroutine timeout (`withTimeoutOrNull(3000L)`), invoking `allowCall()` immediately on timeout or network interruption.
+1. **Incoming Call Delivery (3GPP TS 24.008):**
+   - When a call is placed to a keypad phone, the Mobile Switching Centre (MSC) or IP Multimedia Subsystem (IMS) routes the call via SS7 / ISUP or SIP INVITE directly to the Base Transceiver Station (BTS).
+   - The BTS pages the keypad phone's cellular baseband over the Paging Channel (PCH).
+   - The phone's baseband processor alerts the user via hardware ringer immediately.
+   - **Conclusion:** There is zero software layer on the phone or over the air that can intercept, inspect, or drop an incoming call before it rings, unless integrated directly at the cellular operator's MSC/HLR level.
+
+2. **Incoming SMS Delivery (3GPP TS 23.040):**
+   - An SMS travels from the Short Message Service Center (SMSC) directly to the keypad phone's baseband processor via the cellular signaling channel (SS7 MAP forwardSM or IMS SIP MESSAGE).
+   - The message is written directly to the SIM memory or baseband NVRAM.
+   - **Conclusion:** No device-independent external consumer software can read, filter, or delete this message prior to the senior user seeing it without carrier-level SMS firewalls.
+
+3. **No Carrier SS7/IMS Partnership:**
+   - Under project constraints, no telecom operator (Jio, Airtel, Vi, BSNL) partnerships or private telecom APIs are available.
+   - Therefore, automatic network-level filtering cannot be claimed.
 
 ---
 
-## 4. AI & Machine Learning Detection Boundaries
+## 3. The Guardian-Assisted Architecture (Technical Truth)
 
-### 4.1 Lexical & Structural Inference Limits
-- **Constraint:** The URL phishing detector is a lightweight, local-CPU scikit-learn RandomForest model trained on lexical and structural features (URL length, domain entropy, brand keywords, token counts). It does not execute dynamic browser DOM headless rendering or live page scraping.
-- **Impact:** Highly sophisticated zero-day phishing attacks that perfectly mimic benign lexical patterns on clean domains cannot be detected solely through lexical signals without threat intelligence corroboration.
-- **Mitigation:** Cyber Raksha AI pairs lexical ML with verified authoritative threat intelligence feeds (URLhaus, CERT-In, TRAI).
+To resolve the impossible problem of protecting senior keypad phone users without hardware or telecom modification, Cyber Raksha AI uses a **Guardian-Assisted Protection Model**:
+
+| Capability | Automated on Keypad Phone? | Real-World Implementation in Cyber Raksha AI |
+|---|---|---|
+| **SMS Fraud Detection** | **No** (Impossible without carrier/hardware) | **Guardian Manual Scan:** Guardian inputs suspicious SMS text via the Android application; NLP engine classifies threats and returns actionable advice. |
+| **Incoming Call Identification** | **No** (Impossible without carrier/hardware) | **Guardian Call Check:** Guardian looks up missed or received caller numbers against the community reputation database. |
+| **Call Blocking** | **No** (Impossible without hardware) | **Manual Phone Blocklist or DoT Sanchar Saathi:** App instructs guardian how to block the number in the feature phone's built-in 10-number reject list, or report to Chakshu. |
+| **Incident Alerts** | **No** (No autonomous phone agent) | **Event-Driven Guardian Alerts:** Alerts are generated when an SMS or Call check is submitted through the API. |
+| **Fraud Education** | **Yes** (Delivered via Guardian App) | **Trilingual Fraud Modules:** Kannada, Hindi, and English guides explain common scams in plain language. |
+
+---
+
+## 4. Distinction Between Sanchar Saathi / DoT Reporting and Local Software Blocking
+
+- **Cyber Raksha Local Intelligence:** Maintains a decentralized reputation database based on multi-guardian reports. It provides immediate risk scores to guardians checking numbers.
+- **Department of Telecommunications (DoT) Sanchar Saathi (Chakshu):** The Government of India portal where citizens report fraudulent numbers for carrier-wide IMEI/SIM deactivation.
+- **Critical Distinction:** Cyber Raksha AI guides users to Chakshu and 1930 for official enforcement; it does not claim to disconnect carrier numbers autonomously.

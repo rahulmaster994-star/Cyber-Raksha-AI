@@ -53,6 +53,7 @@ def init_db() -> None:
     from app.models.sms_analysis import SmsAnalysis
     from app.models.complaint import CybercrimeComplaint
     from app.models.community_report import CommunityReport
+    from app.models.keypad_protection import KeypadElderlyUser, KeypadScamReport, KeypadIncident
 
     Base.metadata.create_all(bind=engine)
 

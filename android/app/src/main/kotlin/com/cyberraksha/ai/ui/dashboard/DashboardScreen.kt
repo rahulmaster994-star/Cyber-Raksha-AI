@@ -48,6 +48,7 @@ fun DashboardScreen(
     onNavigateToCallProtection: () -> Unit = {},
     onNavigateToThreatHistory: () -> Unit = {},
     onNavigateToComplaints: () -> Unit = {},
+    onNavigateToKeypadProtection: () -> Unit = {},
     onNavigateToOnboarding: () -> Unit = {}
 ) {
     val context = LocalContext.current
@@ -354,6 +355,61 @@ fun DashboardScreen(
                             modifier = Modifier.fillMaxWidth()
                         ) {
                             Text("Open Complaint Assistant", fontWeight = FontWeight.Bold)
+                        }
+                    }
+                }
+            }
+
+            // Keypad User Protection Card (Guardian Shield for Elderly Traditional Phones)
+            item {
+                Card(
+                    colors = CardDefaults.cardColors(containerColor = DarkSurface),
+                    shape = RoundedCornerShape(12.dp),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Column(modifier = Modifier.padding(16.dp)) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Icon(
+                                    imageVector = Icons.Default.PhoneAndroid,
+                                    contentDescription = null,
+                                    tint = CyberCyan,
+                                    modifier = Modifier.size(24.dp)
+                                )
+                                Spacer(modifier = Modifier.width(10.dp))
+                                Column {
+                                    Text(
+                                        text = "Keypad User Protection",
+                                        fontWeight = FontWeight.Bold,
+                                        color = TextPrimary,
+                                        fontSize = 15.sp
+                                    )
+                                    Text(
+                                        text = "Elderly Shield for Nokia, Samsung, Jio Bharat",
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = TextSecondary
+                                    )
+                                }
+                            }
+                        }
+                        Spacer(modifier = Modifier.height(10.dp))
+                        Text(
+                            text = "Protect elderly family members against Digital Arrest, fake electricity bills, and KYC scams using guardian threat intelligence.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = TextSecondary
+                        )
+                        Spacer(modifier = Modifier.height(12.dp))
+                        Button(
+                            onClick = onNavigateToKeypadProtection,
+                            colors = ButtonDefaults.buttonColors(containerColor = CyberCyan, contentColor = Color.Black),
+                            shape = RoundedCornerShape(8.dp),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Text("Open Keypad Protection Shield", fontWeight = FontWeight.Bold)
                         }
                     }
                 }

@@ -223,3 +223,149 @@ data class CommunityReportResponseDto(
     @SerializedName("message")          val message: String
 )
 
+// ── Keypad User Protection (Elderly Shield) ──────────────────────────────────
+
+data class KeypadElderlyUserCreateRequest(
+    @SerializedName("full_name")          val fullName: String,
+    @SerializedName("mobile_number")      val mobileNumber: String,
+    @SerializedName("relationship")       val relationship: String = "Parent",
+    @SerializedName("device_type")        val deviceType: String = "Nokia 105",
+    @SerializedName("preferred_language") val preferredLanguage: String = "en",
+    @SerializedName("consent_given")      val consentGiven: Boolean = true,
+    @SerializedName("consent_notes")      val consentNotes: String? = null
+)
+
+typealias KeypadElderlyUserCreateDto = KeypadElderlyUserCreateRequest
+typealias KeypadIncidentDto = KeypadIncidentItemDto
+
+data class KeypadElderlyUserResponseDto(
+    @SerializedName("id")                   val id: Int,
+    @SerializedName("guardian_user_id")     val guardianUserId: Int,
+    @SerializedName("full_name")            val fullName: String,
+    @SerializedName("mobile_number")        val mobileNumber: String,
+    @SerializedName("masked_mobile_number") val maskedMobileNumber: String,
+    @SerializedName("relationship")         val relationship: String,
+    @SerializedName("device_type")          val deviceType: String,
+    @SerializedName("preferred_language")   val preferredLanguage: String,
+    @SerializedName("consent_given")        val consentGiven: Boolean,
+    @SerializedName("is_active")            val isActive: Boolean,
+    @SerializedName("created_at")           val createdAt: String
+)
+
+data class KeypadSmsCheckRequestDto(
+    @SerializedName("elderly_user_id")    val elderlyUserId: Int? = null,
+    @SerializedName("sender")             val sender: String? = null,
+    @SerializedName("message")            val message: String,
+    @SerializedName("preferred_language") val preferredLanguage: String = "en"
+)
+
+data class KeypadSmsCheckResponseDto(
+    @SerializedName("risk_score")             val riskScore: Double,
+    @SerializedName("risk_level")             val riskLevel: String,
+    @SerializedName("category")               val category: String,
+    @SerializedName("matched_signatures")     val matchedSignatures: List<String>,
+    @SerializedName("explanation")            val explanation: String,
+    @SerializedName("recommended_action")     val recommendedAction: String,
+    @SerializedName("golden_rule")            val goldenRule: String,
+    @SerializedName("helpline")               val helpline: String,
+    @SerializedName("is_automatic_detection") val isAutomaticDetection: Boolean = false,
+    @SerializedName("disclaimer")             val disclaimer: String
+)
+
+data class KeypadCallCheckRequestDto(
+    @SerializedName("elderly_user_id")         val elderlyUserId: Int? = null,
+    @SerializedName("phone_number")            val phoneNumber: String,
+    @SerializedName("claimed_caller_identity") val claimedCallerIdentity: String? = null,
+    @SerializedName("preferred_language")      val preferredLanguage: String = "en"
+)
+
+data class KeypadCallCheckResponseDto(
+    @SerializedName("phone_number")          val phoneNumber: String,
+    @SerializedName("normalized_number")     val normalizedNumber: String,
+    @SerializedName("risk_level")            val riskLevel: String,
+    @SerializedName("risk_score")            val riskScore: Double,
+    @SerializedName("fraud_category")        val fraudCategory: String?,
+    @SerializedName("report_count")          val reportCount: Int,
+    @SerializedName("is_verified_authority") val isVerifiedAuthority: Boolean,
+    @SerializedName("verification_status")   val verificationStatus: String,
+    @SerializedName("explanation")           val explanation: String,
+    @SerializedName("recommended_action")    val recommendedAction: String,
+    @SerializedName("reporting_helpline")    val reportingHelpline: String,
+    @SerializedName("is_automatic_blocking") val isAutomaticBlocking: Boolean = false,
+    @SerializedName("disclaimer")            val disclaimer: String
+)
+
+data class KeypadScamNumberReportRequestDto(
+    @SerializedName("elderly_user_id")         val elderlyUserId: Int? = null,
+    @SerializedName("phone_number")            val phoneNumber: String,
+    @SerializedName("fraud_category")          val fraudCategory: String = "SUSPICIOUS_CALL",
+    @SerializedName("claimed_caller_identity") val claimedCallerIdentity: String? = null,
+    @SerializedName("evidence_notes")          val evidenceNotes: String? = null
+)
+
+data class KeypadScamNumberReportResponseDto(
+    @SerializedName("id")                  val id: Int,
+    @SerializedName("normalized_number")   val normalizedNumber: String,
+    @SerializedName("status")              val status: String,
+    @SerializedName("message")             val message: String,
+    @SerializedName("verification_status") val verificationStatus: String
+)
+
+data class KeypadIncidentItemDto(
+    @SerializedName("id")                 val id: Int,
+    @SerializedName("guardian_user_id")   val guardianUserId: Int,
+    @SerializedName("elderly_user_id")    val elderlyUserId: Int?,
+    @SerializedName("elderly_user_name")  val elderlyUserName: String?,
+    @SerializedName("incident_type")      val incidentType: String,
+    @SerializedName("indicator")          val indicator: String,
+    @SerializedName("risk_score")         val riskScore: Double,
+    @SerializedName("severity")           val severity: String,
+    @SerializedName("category")           val category: String,
+    @SerializedName("explanation")        val explanation: String,
+    @SerializedName("recommended_action") val recommendedAction: String,
+    @SerializedName("is_acknowledged")    val isAcknowledged: Boolean,
+    @SerializedName("created_at")         val createdAt: String
+)
+
+data class KeypadAlertSummaryResponseDto(
+    @SerializedName("total_dependents")      val totalDependents: Int,
+    @SerializedName("total_incidents")       val totalIncidents: Int,
+    @SerializedName("unacknowledged_alerts") val unacknowledgedAlerts: Int,
+    @SerializedName("critical_alerts")       val criticalAlerts: Int,
+    @SerializedName("high_alerts")           val highAlerts: Int,
+    @SerializedName("recent_incidents")      val recentIncidents: List<KeypadIncidentItemDto>
+)
+
+data class KeypadEducationTopicDto(
+    @SerializedName("topic_id")          val topicId: String,
+    @SerializedName("title")             val title: String,
+    @SerializedName("summary")           val summary: String,
+    @SerializedName("danger_indicators") val dangerIndicators: List<String>,
+    @SerializedName("safe_behavior")     val safeBehavior: String
+)
+
+data class KeypadEducationResponseDto(
+    @SerializedName("language")                val language: String,
+    @SerializedName("language_label")          val languageLabel: String,
+    @SerializedName("golden_rule_title")       val goldenRuleTitle: String,
+    @SerializedName("golden_rule_description") val goldenRuleDescription: String,
+    @SerializedName("do_not_share_items")      val doNotShareItems: List<String>,
+    @SerializedName("common_scams")            val commonScams: List<KeypadEducationTopicDto>,
+    @SerializedName("helpline_guidance")       val helplineGuidance: String
+)
+
+data class KeypadHelpdeskEntryDto(
+    @SerializedName("name")           val name: String,
+    @SerializedName("purpose")        val purpose: String,
+    @SerializedName("access_channel") val accessChannel: String,
+    @SerializedName("contact_or_url") val contactOrUrl: String,
+    @SerializedName("how_it_helps")   val howItHelps: String
+)
+
+data class KeypadOfficialHelpdeskResponseDto(
+    @SerializedName("disclaimer")          val disclaimer: String,
+    @SerializedName("portals")             val portals: List<Map<String, Any>>,
+    @SerializedName("helplines")           val helplines: List<KeypadHelpdeskEntryDto>,
+    @SerializedName("legal_clarification") val legalClarification: String
+)
+

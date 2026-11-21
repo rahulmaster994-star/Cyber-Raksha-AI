@@ -26,19 +26,23 @@ import com.cyberraksha.ai.ui.onboarding.OnboardingScreen
 import com.cyberraksha.ai.ui.settings.SettingsScreen
 import com.cyberraksha.ai.ui.sms_protection.SmsProtectionScreen
 import com.cyberraksha.ai.ui.sms_protection.SmsProtectionViewModel
+import com.cyberraksha.ai.data.repository.KeypadProtectionRepository
+import com.cyberraksha.ai.ui.keypad.KeypadProtectionScreen
+import com.cyberraksha.ai.ui.keypad.KeypadProtectionViewModel
 import com.cyberraksha.ai.ui.threat_history.ThreatHistoryScreen
 import com.cyberraksha.ai.ui.threat_history.ThreatHistoryViewModel
 
 object Routes {
-    const val AUTH             = "auth"
-    const val ONBOARDING       = "onboarding"
-    const val DASHBOARD        = "dashboard"
-    const val ALERTS           = "alerts"
-    const val SETTINGS         = "settings"
-    const val SMS_PROTECTION   = "sms_protection"
-    const val CALL_PROTECTION  = "call_protection"
-    const val THREAT_HISTORY   = "threat_history"
-    const val COMPLAINTS       = "complaints"
+    const val AUTH              = "auth"
+    const val ONBOARDING        = "onboarding"
+    const val DASHBOARD         = "dashboard"
+    const val ALERTS            = "alerts"
+    const val SETTINGS          = "settings"
+    const val SMS_PROTECTION    = "sms_protection"
+    const val CALL_PROTECTION   = "call_protection"
+    const val THREAT_HISTORY    = "threat_history"
+    const val COMPLAINTS        = "complaints"
+    const val KEYPAD_PROTECTION = "keypad_protection"
 }
 
 @Composable
@@ -62,6 +66,13 @@ fun CyberRakshaNavHost(prefs: AppPreferences) {
         MobileProtectionRepository(
             api = NetworkModule.getApiService(backendUrl),
             smsDao = db.smsAnalysisDao(),
+            prefs = prefs
+        )
+    }
+
+    val keypadRepository = remember(backendUrl) {
+        KeypadProtectionRepository(
+            api = NetworkModule.getApiService(backendUrl),
             prefs = prefs
         )
     }
@@ -107,6 +118,7 @@ fun CyberRakshaNavHost(prefs: AppPreferences) {
                 onNavigateToCallProtection = { navController.navigate(Routes.CALL_PROTECTION) },
                 onNavigateToThreatHistory  = { navController.navigate(Routes.THREAT_HISTORY) },
                 onNavigateToComplaints     = { navController.navigate(Routes.COMPLAINTS) },
+                onNavigateToKeypadProtection = { navController.navigate(Routes.KEYPAD_PROTECTION) },
                 onNavigateToOnboarding     = { navController.navigate(Routes.ONBOARDING) }
             )
         }
@@ -163,6 +175,15 @@ fun CyberRakshaNavHost(prefs: AppPreferences) {
                 ThreatHistoryViewModel(repository = mobileRepository)
             }
             ThreatHistoryScreen(
+                viewModel = viewModel,
+                onBack = { navController.popBackStack() }
+            )
+        }
+        composable(Routes.KEYPAD_PROTECTION) {
+            val viewModel = remember {
+                KeypadProtectionViewModel(repository = keypadRepository)
+            }
+            KeypadProtectionScreen(
                 viewModel = viewModel,
                 onBack = { navController.popBackStack() }
             )
