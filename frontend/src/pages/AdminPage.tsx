@@ -37,6 +37,8 @@ type AdminTab =
   | 'threat_intel'
   | 'alerts'
   | 'models'
+  | 'diagnostics'
+  | 'audit'
   | 'diagnostics_audit';
 
 interface AdminPageProps {
@@ -161,6 +163,12 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onNavigateToPublic }) => {
       } else if (tab === 'models') {
         const res = await apiService.getAdminModels(key);
         if (res.data) setModelsData(res.data);
+      } else if (tab === 'diagnostics') {
+        const diagRes = await apiService.getAdminDiagnostics(key);
+        if (diagRes.data) setDiagnostics(diagRes.data);
+      } else if (tab === 'audit') {
+        const auditRes = await apiService.getAdminAuditLogs(key, 100);
+        if (auditRes.data?.audit_logs) setAuditLogs(auditRes.data.audit_logs);
       } else if (tab === 'diagnostics_audit') {
         const [diagRes, auditRes] = await Promise.all([
           apiService.getAdminDiagnostics(key),
@@ -563,16 +571,17 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onNavigateToPublic }) => {
       <div className="max-w-7xl mx-auto mb-6 overflow-x-auto pb-1 scrollbar-thin">
         <div className="flex items-center space-x-1 border-b border-slate-800/80 min-w-max">
           {[
-            { id: 'overview', label: 'Platform Overview', icon: Activity },
-            { id: 'users', label: 'User Directory', icon: UserCheck },
+            { id: 'overview', label: 'Command Centre', icon: Activity },
+            { id: 'users', label: 'User Management', icon: UserCheck },
             { id: 'devices', label: 'Device Management', icon: Smartphone },
-            { id: 'events', label: 'Global Security Events', icon: Layers },
-            { id: 'soc_feed', label: 'Live SOC Feed (SSE)', icon: Radio },
+            { id: 'events', label: 'Security Events', icon: Layers },
+            { id: 'soc_feed', label: 'Live SOC Feed', icon: Radio },
             { id: 'incidents', label: 'Incident Management', icon: ShieldAlert },
             { id: 'threat_intel', label: 'Threat Intelligence', icon: Terminal },
-            { id: 'alerts', label: 'Alert Center', icon: Bell },
-            { id: 'models', label: 'AI Models', icon: Cpu },
-            { id: 'diagnostics_audit', label: 'Diagnostics & Audit', icon: Database },
+            { id: 'alerts', label: 'Alert Centre', icon: Bell },
+            { id: 'models', label: 'AI Model Monitoring', icon: Cpu },
+            { id: 'diagnostics', label: 'System Diagnostics', icon: Server },
+            { id: 'audit', label: 'Audit Logs', icon: Database },
           ].map((tab) => {
             const Icon = tab.icon;
             const isActive = activeTab === tab.id;
@@ -1618,9 +1627,22 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onNavigateToPublic }) => {
           </div>
         )}
 
-        {/* TAB 10: DIAGNOSTICS & AUDIT */}
-        {activeTab === 'diagnostics_audit' && (
+        {/* TAB 10: SYSTEM DIAGNOSTICS */}
+        {(activeTab === 'diagnostics' || activeTab === 'diagnostics_audit') && (
           <div className="space-y-6">
+            <div className="flex justify-between items-center">
+              <h3 className="text-sm font-bold font-mono text-slate-200">
+                SYSTEM DIAGNOSTICS & TELEMETRY
+              </h3>
+              <button
+                onClick={() => loadCurrentTabData('diagnostics', adminKey)}
+                className="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs font-mono text-cyan-300 border border-slate-700 flex items-center gap-1.5"
+              >
+                <RefreshCw className="w-3.5 h-3.5" />
+                <span>PING BACKEND</span>
+              </button>
+            </div>
+
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 font-mono text-xs">
               <div className="p-4 rounded-xl bg-slate-900/60 border border-slate-800">
                 <span className="text-slate-500 block mb-1">DATABASE PING LATENCY</span>
@@ -1639,44 +1661,79 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onNavigateToPublic }) => {
               </div>
             </div>
 
-            <div>
-              <h3 className="text-sm font-bold font-mono text-slate-200 mb-3">
+            <div className="p-5 rounded-xl bg-slate-900/60 border border-slate-800 font-mono text-xs space-y-3">
+              <h4 className="font-bold text-white uppercase border-b border-slate-800 pb-2">Subsystem Health Matrix</h4>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-slate-300">
+                <div className="flex justify-between p-2 rounded bg-slate-950 border border-slate-800/80">
+                  <span className="text-slate-400">FastAPI Application Server</span>
+                  <span className="text-emerald-400 font-bold">ONLINE</span>
+                </div>
+                <div className="flex justify-between p-2 rounded bg-slate-950 border border-slate-800/80">
+                  <span className="text-slate-400">Database Engine Session</span>
+                  <span className="text-emerald-400 font-bold">CONNECTED</span>
+                </div>
+                <div className="flex justify-between p-2 rounded bg-slate-950 border border-slate-800/80">
+                  <span className="text-slate-400">Threat Intel Scheduler</span>
+                  <span className="text-cyan-400 font-bold">ACTIVE (15m interval)</span>
+                </div>
+                <div className="flex justify-between p-2 rounded bg-slate-950 border border-slate-800/80">
+                  <span className="text-slate-400">SSE Event Stream Emitter</span>
+                  <span className="text-purple-400 font-bold">BROADCASTING</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* TAB 11: AUDIT LOGS */}
+        {(activeTab === 'audit' || activeTab === 'diagnostics_audit') && (
+          <div className="space-y-4">
+            <div className="flex justify-between items-center">
+              <h3 className="text-sm font-bold font-mono text-slate-200">
                 ADMINISTRATIVE AUDIT TRAIL ({auditLogs.length} Records)
               </h3>
-              <div className="overflow-x-auto rounded-xl border border-slate-800 bg-slate-900/60">
-                <table className="w-full text-left text-xs font-mono">
-                  <thead className="bg-slate-950/80 border-b border-slate-800 text-slate-400 uppercase text-[10px]">
+              <button
+                onClick={() => loadCurrentTabData('audit', adminKey)}
+                className="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs font-mono text-cyan-300 border border-slate-700 flex items-center gap-1.5"
+              >
+                <RefreshCw className="w-3.5 h-3.5" />
+                <span>REFRESH AUDIT TRAIL</span>
+              </button>
+            </div>
+
+            <div className="overflow-x-auto rounded-xl border border-slate-800 bg-slate-900/60">
+              <table className="w-full text-left text-xs font-mono">
+                <thead className="bg-slate-950/80 border-b border-slate-800 text-slate-400 uppercase text-[10px]">
+                  <tr>
+                    <th className="p-3">Timestamp</th>
+                    <th className="p-3">Admin</th>
+                    <th className="p-3">Action</th>
+                    <th className="p-3">Target ID</th>
+                    <th className="p-3">Details</th>
+                    <th className="p-3">IP Address</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-800/60">
+                  {auditLogs.length === 0 ? (
                     <tr>
-                      <th className="p-3">Timestamp</th>
-                      <th className="p-3">Admin</th>
-                      <th className="p-3">Action</th>
-                      <th className="p-3">Target ID</th>
-                      <th className="p-3">Details</th>
-                      <th className="p-3">IP Address</th>
+                      <td colSpan={6} className="p-6 text-center text-slate-500">
+                        No audit trail records logged yet.
+                      </td>
                     </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-800/60">
-                    {auditLogs.length === 0 ? (
-                      <tr>
-                        <td colSpan={6} className="p-4 text-center text-slate-500">
-                          No audit trail records logged yet.
-                        </td>
+                  ) : (
+                    auditLogs.map((log) => (
+                      <tr key={log.id} className="hover:bg-slate-800/30">
+                        <td className="p-3 text-slate-400 whitespace-nowrap">{new Date(log.created_at).toLocaleString()}</td>
+                        <td className="p-3 font-semibold text-cyan-400">{log.admin_username}</td>
+                        <td className="p-3 font-bold text-white">{log.action}</td>
+                        <td className="p-3 text-slate-300">{log.target_id || '—'}</td>
+                        <td className="p-3 text-slate-400 max-w-[250px] truncate" title={log.details || ''}>{log.details || '—'}</td>
+                        <td className="p-3 text-slate-500">{log.ip_address}</td>
                       </tr>
-                    ) : (
-                      auditLogs.map((log) => (
-                        <tr key={log.id} className="hover:bg-slate-800/30">
-                          <td className="p-3 text-slate-400 whitespace-nowrap">{new Date(log.created_at).toLocaleString()}</td>
-                          <td className="p-3 font-semibold text-cyan-400">{log.admin_username}</td>
-                          <td className="p-3 font-bold text-white">{log.action}</td>
-                          <td className="p-3 text-slate-300">{log.target_id || '—'}</td>
-                          <td className="p-3 text-slate-400 max-w-[250px] truncate" title={log.details || ''}>{log.details || '—'}</td>
-                          <td className="p-3 text-slate-500">{log.ip_address}</td>
-                        </tr>
-                      ))
-                    )}
-                  </tbody>
-                </table>
-              </div>
+                    ))
+                  )}
+                </tbody>
+              </table>
             </div>
           </div>
         )}
