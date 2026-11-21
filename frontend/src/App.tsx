@@ -21,7 +21,11 @@ import type {
 } from './services/api';
 
 export const App: React.FC = () => {
-  const [currentTab, setCurrentTab] = useState<'landing' | 'dashboard' | 'phishing' | 'communication' | 'digital-arrest' | 'voice-shield' | 'intel' | 'unified-analyzer' | 'protection-center' | 'modules' | 'system' | 'admin'>('landing');
+  const [currentTab, setCurrentTab] = useState<'landing' | 'dashboard' | 'phishing' | 'communication' | 'digital-arrest' | 'voice-shield' | 'intel' | 'unified-analyzer' | 'protection-center' | 'modules' | 'system' | 'admin'>(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('tab') === 'admin' || window.location.hash === '#admin') return 'admin';
+    return 'landing';
+  });
   const [health, setHealth] = useState<HealthCheckData | null>(null);
   const [systemInfo, setSystemInfo] = useState<SystemInfoData | null>(null);
   const [modulesData, setModulesData] = useState<SecurityModulesResponse | null>(null);
@@ -67,6 +71,22 @@ export const App: React.FC = () => {
     } finally {
       setIsRefreshing(false);
     }
+  }, []);
+
+  // Handle URL hash / query routing for direct SOC Admin Control Room access
+  useEffect(() => {
+    const syncRoute = () => {
+      const params = new URLSearchParams(window.location.search);
+      if (window.location.hash === '#admin' || params.get('tab') === 'admin') {
+        setCurrentTab('admin');
+      }
+    };
+    window.addEventListener('hashchange', syncRoute);
+    window.addEventListener('popstate', syncRoute);
+    return () => {
+      window.removeEventListener('hashchange', syncRoute);
+      window.removeEventListener('popstate', syncRoute);
+    };
   }, []);
 
   // PWA Share Target — handle incoming shared URLs/text from Android share sheet
