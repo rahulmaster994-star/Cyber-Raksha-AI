@@ -58,14 +58,23 @@ def require_admin_access(
     """
     Enforces strict administrator authentication.
     Accepts:
-    1. X-Admin-Key header validated via constant-time comparison.
-    2. Authorization: Bearer <token> where token is a verified Admin JWT.
+    1. X-Admin-Key header validated via constant-time comparison (Master Secret Key).
+    2. X-Admin-Key header containing a verified Admin JWT token.
+    3. Authorization: Bearer <token> where token is a verified Admin JWT.
     Fails closed with HTTP 401 Unauthorized if missing, forged, or invalid.
     """
-    # 1. Check X-Admin-Key header with constant-time comparison
-    if x_admin_key and settings.ADMIN_SECRET_KEY:
-        if hmac.compare_digest(x_admin_key.strip(), settings.ADMIN_SECRET_KEY):
+    # 1. Check X-Admin-Key header
+    if x_admin_key:
+        clean_key = x_admin_key.strip()
+        if settings.ADMIN_SECRET_KEY and hmac.compare_digest(clean_key, settings.ADMIN_SECRET_KEY):
             return AdminAuthContext(admin_id="master_admin", auth_method="KEY")
+        # Check if X-Admin-Key is a valid Admin JWT token
+        token_payload = verify_access_token(clean_key)
+        if token_payload and token_payload.get("role") in ("admin", "superadmin"):
+            return AdminAuthContext(
+                admin_id=str(token_payload.get("username") or token_payload.get("sub") or "admin"),
+                auth_method="TOKEN"
+            )
 
     # 2. Check Authorization Bearer JWT Token
     auth_header = request.headers.get("Authorization")
