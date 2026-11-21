@@ -242,20 +242,6 @@ export const Navbar: React.FC<NavbarProps> = ({
               <Layers className="w-4 h-4" />
               <span>System Info</span>
             </button>
-            <button
-              id="nav-admin"
-              onClick={() => setCurrentTab('admin')}
-              className={`px-3 py-1.5 rounded-md text-sm font-medium transition-all flex items-center space-x-1.5 ${
-                currentTab === 'admin'
-                  ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 shadow-[0_0_10px_rgba(0,240,255,0.3)]'
-                  : 'text-gray-300 hover:text-white hover:bg-slate-800/40'
-              }`}
-            >
-              <span>Admin</span>
-              <span className="text-[10px] px-1.5 py-0.2 rounded bg-cyan-500/20 text-cyan-400 border border-cyan-500/30 font-mono">
-                Ops
-              </span>
-            </button>
           </nav>
 
           {/* Live Telemetry Status Pills */}

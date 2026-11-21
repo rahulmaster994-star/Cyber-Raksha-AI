@@ -16,7 +16,7 @@ class Settings(BaseSettings):
     STAGE: str = "Stage 1-10: Release Candidate & Production Packaging"
     DEBUG: bool = True
     API_V1_STR: str = "/api/v1"
-    ADMIN_SECRET_KEY: str = "cyber-raksha-admin-secret-key-2026"
+    ADMIN_SECRET_KEY: str = os.getenv("CYBER_RAKSHA_ADMIN_SECRET", os.getenv("ADMIN_SECRET_KEY", "cyber-raksha-admin-secret-key-2026"))
     
     # SQLite default, designed for seamless PostgreSQL migration in future stages
     DATABASE_URL: str = "sqlite:///./cyber_raksha.db"
@@ -70,5 +70,37 @@ class Settings(BaseSettings):
         raw = os.getenv("CORS_ORIGINS", os.getenv("ALLOWED_ORIGINS", self.CORS_ORIGINS))
         return [origin.strip() for origin in raw.split(",") if origin.strip()]
 
+    def validate_security_configuration(self) -> None:
+        """
+        Security Enforcement:
+        In production environment (APP_ENV == 'production'), ensures:
+        1. ADMIN_SECRET_KEY is explicitly configured, not the default, and >= 24 chars.
+        2. JWT_SECRET_KEY is explicitly configured, not the default, and >= 32 chars.
+        Fails closed otherwise to prevent deployment with insecure defaults.
+        """
+        if self.APP_ENV == "production":
+            insecure_admin = (
+                not self.ADMIN_SECRET_KEY
+                or self.ADMIN_SECRET_KEY == "cyber-raksha-admin-secret-key-2026"
+                or len(self.ADMIN_SECRET_KEY) < 24
+            )
+            if insecure_admin:
+                raise RuntimeError(
+                    "FATAL SECURITY MISCONFIGURATION: In production mode, you must set a strong, "
+                    "non-default CYBER_RAKSHA_ADMIN_SECRET environment variable (minimum 24 characters). "
+                    "System failing closed to prevent unauthorized administrator access."
+                )
+            insecure_jwt = (
+                not self.JWT_SECRET_KEY
+                or ("production" in self.JWT_SECRET_KEY and "cyber-raksha-jwt" in self.JWT_SECRET_KEY)
+                or len(self.JWT_SECRET_KEY) < 32
+            )
+            if insecure_jwt:
+                raise RuntimeError(
+                    "FATAL SECURITY MISCONFIGURATION: In production mode, you must set a cryptographically "
+                    "secure CYBER_RAKSHA_JWT_SECRET environment variable (minimum 32 characters)."
+                )
+
 
 settings = Settings()
+settings.validate_security_configuration()

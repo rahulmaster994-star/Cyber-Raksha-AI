@@ -93,7 +93,22 @@ def register_device(payload: DeviceRegisterRequest, db: Session = Depends(get_db
     summary="Revoke Device Credentials",
     description="Invalidates a device's authentication credentials and revokes mobile access."
 )
-def revoke_device(device_id: str, db: Session = Depends(get_db)):
+def revoke_device(
+    device_id: str,
+    sec_ctx: SecurityContext = Depends(get_security_context),
+    db: Session = Depends(get_db)
+):
+    if not sec_ctx.is_authenticated:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Authentication required to revoke device credentials."
+        )
+    if not sec_ctx.can_access_device(device_id):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=f"Access denied: Cannot revoke credentials for device '{device_id}'."
+        )
+
     device = db.query(Device).filter(Device.device_id == device_id).first()
     if not device:
         raise HTTPException(
@@ -126,7 +141,7 @@ def get_device_status(
     sec_ctx: SecurityContext = Depends(get_security_context),
     db: Session = Depends(get_db)
 ):
-    # Phase B3.1: Enforce device authorization boundary
+    # Phase B3.1 & B4: Enforce strict device authorization boundary
     if sec_ctx.is_authenticated and not sec_ctx.can_access_device(device_id):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
@@ -174,7 +189,7 @@ def get_device_activity(
     sec_ctx: SecurityContext = Depends(get_security_context),
     db: Session = Depends(get_db)
 ):
-    # Phase B3.1: Enforce device authorization boundary
+    # Phase B3.1 & B4: Enforce strict device authorization boundary
     if sec_ctx.is_authenticated and not sec_ctx.can_access_device(device_id):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,

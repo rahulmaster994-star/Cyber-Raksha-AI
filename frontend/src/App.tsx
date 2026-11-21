@@ -265,7 +265,7 @@ export const App: React.FC = () => {
       <div className="md:hidden h-16" aria-hidden="true" />
 
       {/* Consistent Platform Footer */}
-      <Footer />
+      <Footer onOpenAdmin={() => setCurrentTab('admin')} />
     </div>
   );
 };

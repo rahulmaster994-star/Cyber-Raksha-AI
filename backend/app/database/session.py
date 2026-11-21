@@ -17,7 +17,7 @@ engine_kwargs = {
 }
 
 if db_url.startswith("sqlite"):
-    connect_args = {"check_same_thread": False}
+    connect_args = {"check_same_thread": False, "timeout": 30.0}
 else:
     # PostgreSQL production optimizations (Neon / Supabase / Render)
     engine_kwargs["pool_size"] = 10
@@ -54,6 +54,7 @@ def init_db() -> None:
     from app.models.complaint import CybercrimeComplaint
     from app.models.community_report import CommunityReport
     from app.models.keypad_protection import KeypadElderlyUser, KeypadScamReport, KeypadIncident
+    from app.models.admin_audit import AdminAuditLog
 
     Base.metadata.create_all(bind=engine)
 

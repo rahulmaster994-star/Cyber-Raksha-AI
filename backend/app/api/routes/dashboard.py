@@ -8,11 +8,12 @@ Zero hardcoding or fake statistics.
 """
 from typing import Dict, Any, List, Optional
 from datetime import datetime, timezone
-from fastapi import APIRouter, Depends, Query, status
+from fastapi import APIRouter, Depends, Query, status, HTTPException
 from sqlalchemy.orm import Session
 from sqlalchemy import desc, func
 
 from app.database.session import get_db
+from app.core.security import get_security_context, SecurityContext
 from app.models.security_event import SecurityEvent
 from app.models.incident import SecurityIncident, IncidentAction
 from app.models.device import Device
@@ -23,13 +24,30 @@ from app.models.phone_reputation import PhoneReputation
 router = APIRouter(prefix="/dashboard", tags=["Central Security Dashboard (Phase B3)"])
 
 
+def require_dashboard_access(sec_ctx: SecurityContext = Depends(get_security_context)) -> SecurityContext:
+    if not sec_ctx.is_authenticated:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Authentication required to view platform dashboard telemetry."
+        )
+    if not sec_ctx.is_admin:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Administrator privileges required to view global platform dashboard telemetry."
+        )
+    return sec_ctx
+
+
 @router.get(
     "/overview",
     status_code=status.HTTP_200_OK,
     summary="Get Unified Security Command Center Overview",
     description="Returns verified aggregate statistics queried directly from the production database."
 )
-def get_dashboard_overview(db: Session = Depends(get_db)) -> Dict[str, Any]:
+def get_dashboard_overview(
+    auth: SecurityContext = Depends(require_dashboard_access),
+    db: Session = Depends(get_db)
+) -> Dict[str, Any]:
     # 1. Real Event Counts
     total_events = db.query(SecurityEvent).count()
     events_by_sev = dict(
@@ -124,6 +142,7 @@ def get_dashboard_overview(db: Session = Depends(get_db)) -> Dict[str, Any]:
 )
 def get_dashboard_activity(
     limit: int = Query(25, ge=1, le=100),
+    auth: SecurityContext = Depends(require_dashboard_access),
     db: Session = Depends(get_db)
 ) -> Dict[str, Any]:
     events = (
@@ -163,6 +182,7 @@ def get_dashboard_activity(
 )
 def get_dashboard_incidents(
     limit: int = Query(10, ge=1, le=50),
+    auth: SecurityContext = Depends(require_dashboard_access),
     db: Session = Depends(get_db)
 ) -> Dict[str, Any]:
     incidents = (

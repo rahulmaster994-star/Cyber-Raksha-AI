@@ -368,7 +368,7 @@ def test_b21_14_device_revocation_endpoint(client: TestClient, test_db: Session)
     assert token is not None
 
     # Revoke device
-    revoke_res = client.post(f"/api/v1/devices/{dev_id}/revoke")
+    revoke_res = client.post(f"/api/v1/devices/{dev_id}/revoke", headers={"X-Device-Token": token})
     assert revoke_res.status_code == 200
     assert revoke_res.json()["status"] == "REVOKED"
 

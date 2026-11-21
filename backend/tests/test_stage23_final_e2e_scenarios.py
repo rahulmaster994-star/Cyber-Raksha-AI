@@ -29,6 +29,7 @@ from app.models.incident import SecurityIncident
 from app.models.notification import Notification
 from app.models.threat_intel import ThreatIndicator
 from app.models.phone_reputation import PhoneReputation
+from app.core.config import settings
 from app.services.sms_analysis_service import sms_analysis_service
 from app.services.phone_reputation_service import phone_reputation_service
 from app.services.central_risk_engine import central_risk_engine
@@ -132,7 +133,10 @@ def test_scenario_01_phishing_url_full_lifecycle():
     assert inc_res.json()["severity"] in ["HIGH", "CRITICAL"]
 
     # Verify dashboard incidents endpoint returns 200
-    dash_res = client.get("/api/v1/dashboard/incidents?limit=50", headers={"x-test-bypass-rate-limit": "true"})
+    dash_res = client.get(
+        "/api/v1/dashboard/incidents?limit=50",
+        headers={"x-admin-key": settings.ADMIN_SECRET_KEY, "x-test-bypass-rate-limit": "true"}
+    )
     assert dash_res.status_code == 200
     assert "incidents" in dash_res.json()
 
@@ -374,7 +378,10 @@ def test_scenario_09_browser_event_updates_activity_feed():
     assert post_res.status_code == 201
 
     # Query activity feed
-    feed_res = client.get("/api/v1/dashboard/activity?limit=10", headers={"x-test-bypass-rate-limit": "true"})
+    feed_res = client.get(
+        "/api/v1/dashboard/activity?limit=10",
+        headers={"x-admin-key": settings.ADMIN_SECRET_KEY, "x-test-bypass-rate-limit": "true"}
+    )
     assert feed_res.status_code == 200
     activities = feed_res.json()["activities"]
     assert any(a["threat_indicator"] == unique_ind for a in activities)

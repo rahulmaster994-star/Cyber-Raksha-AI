@@ -14,6 +14,7 @@ from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
 
 from app.main import app
+from app.core.config import settings
 from app.database.session import SessionLocal
 from app.models.threat_intel import ThreatIndicator
 from app.models.device import Device
@@ -235,7 +236,7 @@ def test_b3_workflow_5_dashboard_telemetry_queries():
     Workflow 5: Dashboard returns real aggregated data directly from database queries.
     """
     # Overview
-    ov_res = client.get("/api/v1/dashboard/overview")
+    ov_res = client.get("/api/v1/dashboard/overview", headers={"x-admin-key": settings.ADMIN_SECRET_KEY})
     assert ov_res.status_code == 200
     ov_data = ov_res.json()
     assert "overall_posture" in ov_data
@@ -246,14 +247,14 @@ def test_b3_workflow_5_dashboard_telemetry_queries():
     assert ov_data["events"]["total"] >= 1
 
     # Activity feed
-    act_res = client.get("/api/v1/dashboard/activity?limit=10")
+    act_res = client.get("/api/v1/dashboard/activity?limit=10", headers={"x-admin-key": settings.ADMIN_SECRET_KEY})
     assert act_res.status_code == 200
     act_data = act_res.json()
     assert "activities" in act_data
     assert len(act_data["activities"]) >= 1
 
     # Active incidents
-    inc_list_res = client.get("/api/v1/dashboard/incidents?limit=5")
+    inc_list_res = client.get("/api/v1/dashboard/incidents?limit=5", headers={"x-admin-key": settings.ADMIN_SECRET_KEY})
     assert inc_list_res.status_code == 200
     assert "incidents" in inc_list_res.json()
 

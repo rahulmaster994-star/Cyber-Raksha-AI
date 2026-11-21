@@ -1,7 +1,11 @@
 import React from 'react';
 import { Shield, Terminal, BookOpen, Lock } from 'lucide-react';
 
-export const Footer: React.FC = () => {
+interface FooterProps {
+  onOpenAdmin?: () => void;
+}
+
+export const Footer: React.FC<FooterProps> = ({ onOpenAdmin }) => {
   return (
     <footer className="w-full border-t border-[#1E2E5C]/60 bg-[#050811] py-8 text-gray-400 text-xs mt-auto">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -10,7 +14,7 @@ export const Footer: React.FC = () => {
             <Shield className="w-4 h-4 text-[#00F0FF]" />
             <span className="font-semibold text-gray-200">CYBER RAKSHA AI</span>
             <span className="text-gray-500">|</span>
-            <span className="font-mono text-cyan-400">Stage 1: Complete Project Foundation</span>
+            <span className="font-mono text-cyan-400">Production Release (v1.0.0-rc.1)</span>
           </div>
 
           <div className="flex items-center space-x-6">
@@ -32,10 +36,14 @@ export const Footer: React.FC = () => {
               <BookOpen className="w-3.5 h-3.5" />
               <span>ReDoc Specs</span>
             </a>
-            <div className="flex items-center space-x-1 text-emerald-400">
+            <button
+              onClick={onOpenAdmin}
+              className="flex items-center space-x-1 text-slate-500 hover:text-cyan-400 transition-colors cursor-pointer text-xs font-mono"
+              title="Private SOC Control Room (Authorized Personnel Only)"
+            >
               <Lock className="w-3.5 h-3.5" />
-              <span>FOSS Core</span>
-            </div>
+              <span>SOC Terminal</span>
+            </button>
           </div>
         </div>
 

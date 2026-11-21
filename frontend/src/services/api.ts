@@ -873,6 +873,323 @@ class ApiService {
     }
   }
 
+  // ── Section 4: Admin SOC Control Room APIs ─────────────────────────────────
+
+  public async adminLogin(payload: { admin_key?: string; username?: string; password?: string }): Promise<ApiResponse<any>> {
+    const fullUrl = `${this.baseUrl}/api/v1/admin/auth/login`;
+    try {
+      const response = await fetch(fullUrl, {
+        method: 'POST',
+        headers: { 'Accept': 'application/json', 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      const data = await response.json();
+      if (!response.ok) return { data: null, error: data.detail || 'Authentication failed', isOnline: true };
+      return { data, error: null, isOnline: true };
+    } catch (e: any) {
+      return { data: null, error: e.message, isOnline: false };
+    }
+  }
+
+  public async adminVerify(adminKey: string): Promise<ApiResponse<any>> {
+    const fullUrl = `${this.baseUrl}/api/v1/admin/auth/verify`;
+    try {
+      const response = await fetch(fullUrl, {
+        headers: { 'Accept': 'application/json', 'X-Admin-Key': adminKey },
+      });
+      const data = await response.json();
+      if (!response.ok) return { data: null, error: data.detail || 'Verification failed', isOnline: true };
+      return { data, error: null, isOnline: true };
+    } catch (e: any) {
+      return { data: null, error: e.message, isOnline: false };
+    }
+  }
+
+  public async getAdminUsers(adminKey: string, params?: { search?: string; role?: string; is_active?: boolean; skip?: number; limit?: number }): Promise<ApiResponse<any>> {
+    const q = new URLSearchParams();
+    if (params?.search) q.set('search', params.search);
+    if (params?.role) q.set('role', params.role);
+    if (params?.is_active !== undefined) q.set('is_active', params.is_active.toString());
+    if (params?.skip) q.set('skip', params.skip.toString());
+    if (params?.limit) q.set('limit', params.limit.toString());
+    const fullUrl = `${this.baseUrl}/api/v1/admin/users?${q.toString()}`;
+    try {
+      const response = await fetch(fullUrl, {
+        headers: { 'Accept': 'application/json', 'X-Admin-Key': adminKey },
+      });
+      const data = await response.json();
+      if (!response.ok) return { data: null, error: data.detail || 'Failed to fetch users', isOnline: true };
+      return { data, error: null, isOnline: true };
+    } catch (e: any) {
+      return { data: null, error: e.message, isOnline: false };
+    }
+  }
+
+  public async updateAdminUserStatus(adminKey: string, userId: number, isActive: boolean): Promise<ApiResponse<any>> {
+    const fullUrl = `${this.baseUrl}/api/v1/admin/users/${userId}/status`;
+    try {
+      const response = await fetch(fullUrl, {
+        method: 'PATCH',
+        headers: { 'Accept': 'application/json', 'Content-Type': 'application/json', 'X-Admin-Key': adminKey },
+        body: JSON.stringify({ is_active: isActive }),
+      });
+      const data = await response.json();
+      if (!response.ok) return { data: null, error: data.detail || 'Failed to update user', isOnline: true };
+      return { data, error: null, isOnline: true };
+    } catch (e: any) {
+      return { data: null, error: e.message, isOnline: false };
+    }
+  }
+
+  public async getAdminDevices(adminKey: string, params?: { status?: string; skip?: number; limit?: number }): Promise<ApiResponse<any>> {
+    const q = new URLSearchParams();
+    if (params?.status) q.set('status', params.status);
+    if (params?.skip) q.set('skip', params.skip.toString());
+    if (params?.limit) q.set('limit', params.limit.toString());
+    const fullUrl = `${this.baseUrl}/api/v1/admin/devices?${q.toString()}`;
+    try {
+      const response = await fetch(fullUrl, {
+        headers: { 'Accept': 'application/json', 'X-Admin-Key': adminKey },
+      });
+      const data = await response.json();
+      if (!response.ok) return { data: null, error: data.detail || 'Failed to fetch devices', isOnline: true };
+      return { data, error: null, isOnline: true };
+    } catch (e: any) {
+      return { data: null, error: e.message, isOnline: false };
+    }
+  }
+
+  public async revokeAdminDevice(adminKey: string, deviceId: string): Promise<ApiResponse<any>> {
+    const fullUrl = `${this.baseUrl}/api/v1/admin/devices/${deviceId}/revoke`;
+    try {
+      const response = await fetch(fullUrl, {
+        method: 'POST',
+        headers: { 'Accept': 'application/json', 'X-Admin-Key': adminKey },
+      });
+      const data = await response.json();
+      if (!response.ok) return { data: null, error: data.detail || 'Failed to revoke device', isOnline: true };
+      return { data, error: null, isOnline: true };
+    } catch (e: any) {
+      return { data: null, error: e.message, isOnline: false };
+    }
+  }
+
+  public async suspendAdminDevice(adminKey: string, deviceId: string, reason?: string): Promise<ApiResponse<any>> {
+    const q = reason ? `?reason=${encodeURIComponent(reason)}` : '';
+    const fullUrl = `${this.baseUrl}/api/v1/admin/devices/${deviceId}/suspend${q}`;
+    try {
+      const response = await fetch(fullUrl, {
+        method: 'POST',
+        headers: { 'Accept': 'application/json', 'X-Admin-Key': adminKey },
+      });
+      const data = await response.json();
+      if (!response.ok) return { data: null, error: data.detail || 'Failed to suspend device', isOnline: true };
+      return { data, error: null, isOnline: true };
+    } catch (e: any) {
+      return { data: null, error: e.message, isOnline: false };
+    }
+  }
+
+  public async getAdminDeviceActivity(adminKey: string, deviceId: string, limit: number = 20): Promise<ApiResponse<any>> {
+    const fullUrl = `${this.baseUrl}/api/v1/admin/devices/${deviceId}/activity?limit=${limit}`;
+    try {
+      const response = await fetch(fullUrl, {
+        headers: { 'Accept': 'application/json', 'X-Admin-Key': adminKey },
+      });
+      const data = await response.json();
+      return { data, error: null, isOnline: true };
+    } catch (e: any) {
+      return { data: null, error: e.message, isOnline: false };
+    }
+  }
+
+  public async getAdminSecurityEvents(adminKey: string, params?: { severity?: string; component?: string; skip?: number; limit?: number }): Promise<ApiResponse<any>> {
+    const q = new URLSearchParams();
+    if (params?.severity) q.set('severity', params.severity);
+    if (params?.component) q.set('component', params.component);
+    if (params?.skip) q.set('skip', params.skip.toString());
+    if (params?.limit) q.set('limit', params.limit.toString());
+    const fullUrl = `${this.baseUrl}/api/v1/admin/security-events?${q.toString()}`;
+    try {
+      const response = await fetch(fullUrl, {
+        headers: { 'Accept': 'application/json', 'X-Admin-Key': adminKey },
+      });
+      const data = await response.json();
+      if (!response.ok) return { data: null, error: data.detail || 'Failed to fetch events', isOnline: true };
+      return { data, error: null, isOnline: true };
+    } catch (e: any) {
+      return { data: null, error: e.message, isOnline: false };
+    }
+  }
+
+  public async getAdminIncidents(adminKey: string, params?: { status?: string; severity?: string; skip?: number; limit?: number }): Promise<ApiResponse<any>> {
+    const q = new URLSearchParams();
+    if (params?.status) q.set('status', params.status);
+    if (params?.severity) q.set('severity', params.severity);
+    if (params?.skip) q.set('skip', params.skip.toString());
+    if (params?.limit) q.set('limit', params.limit.toString());
+    const fullUrl = `${this.baseUrl}/api/v1/admin/incidents?${q.toString()}`;
+    try {
+      const response = await fetch(fullUrl, {
+        headers: { 'Accept': 'application/json', 'X-Admin-Key': adminKey },
+      });
+      const data = await response.json();
+      if (!response.ok) return { data: null, error: data.detail || 'Failed to fetch incidents', isOnline: true };
+      return { data, error: null, isOnline: true };
+    } catch (e: any) {
+      return { data: null, error: e.message, isOnline: false };
+    }
+  }
+
+  public async createAdminIncident(adminKey: string, payload: any): Promise<ApiResponse<any>> {
+    const fullUrl = `${this.baseUrl}/api/v1/admin/incidents`;
+    try {
+      const response = await fetch(fullUrl, {
+        method: 'POST',
+        headers: { 'Accept': 'application/json', 'Content-Type': 'application/json', 'X-Admin-Key': adminKey },
+        body: JSON.stringify(payload),
+      });
+      const data = await response.json();
+      if (!response.ok) return { data: null, error: data.detail || 'Failed to create incident', isOnline: true };
+      return { data, error: null, isOnline: true };
+    } catch (e: any) {
+      return { data: null, error: e.message, isOnline: false };
+    }
+  }
+
+  public async updateAdminIncident(adminKey: string, incidentId: number, payload: any): Promise<ApiResponse<any>> {
+    const fullUrl = `${this.baseUrl}/api/v1/admin/incidents/${incidentId}`;
+    try {
+      const response = await fetch(fullUrl, {
+        method: 'PATCH',
+        headers: { 'Accept': 'application/json', 'Content-Type': 'application/json', 'X-Admin-Key': adminKey },
+        body: JSON.stringify(payload),
+      });
+      const data = await response.json();
+      if (!response.ok) return { data: null, error: data.detail || 'Failed to update incident', isOnline: true };
+      return { data, error: null, isOnline: true };
+    } catch (e: any) {
+      return { data: null, error: e.message, isOnline: false };
+    }
+  }
+
+  public async getAdminThreatIntelligence(adminKey: string, params?: { type?: string; active_only?: boolean; limit?: number }): Promise<ApiResponse<any>> {
+    const q = new URLSearchParams();
+    if (params?.type) q.set('type', params.type);
+    if (params?.active_only !== undefined) q.set('active_only', params.active_only.toString());
+    if (params?.limit) q.set('limit', params.limit.toString());
+    const fullUrl = `${this.baseUrl}/api/v1/admin/threat-intelligence?${q.toString()}`;
+    try {
+      const response = await fetch(fullUrl, {
+        headers: { 'Accept': 'application/json', 'X-Admin-Key': adminKey },
+      });
+      const data = await response.json();
+      if (!response.ok) return { data: null, error: data.detail || 'Failed to fetch threat intel', isOnline: true };
+      return { data, error: null, isOnline: true };
+    } catch (e: any) {
+      return { data: null, error: e.message, isOnline: false };
+    }
+  }
+
+  public async addAdminThreatIndicator(adminKey: string, payload: any): Promise<ApiResponse<any>> {
+    const fullUrl = `${this.baseUrl}/api/v1/admin/threat-intelligence/indicators`;
+    try {
+      const response = await fetch(fullUrl, {
+        method: 'POST',
+        headers: { 'Accept': 'application/json', 'Content-Type': 'application/json', 'X-Admin-Key': adminKey },
+        body: JSON.stringify(payload),
+      });
+      const data = await response.json();
+      if (!response.ok) return { data: null, error: data.detail || 'Failed to add indicator', isOnline: true };
+      return { data, error: null, isOnline: true };
+    } catch (e: any) {
+      return { data: null, error: e.message, isOnline: false };
+    }
+  }
+
+  public async deleteAdminThreatIndicator(adminKey: string, indicatorId: number): Promise<ApiResponse<any>> {
+    const fullUrl = `${this.baseUrl}/api/v1/admin/threat-intelligence/indicators/${indicatorId}`;
+    try {
+      const response = await fetch(fullUrl, {
+        method: 'DELETE',
+        headers: { 'Accept': 'application/json', 'X-Admin-Key': adminKey },
+      });
+      const data = await response.json();
+      if (!response.ok) return { data: null, error: data.detail || 'Failed to delete indicator', isOnline: true };
+      return { data, error: null, isOnline: true };
+    } catch (e: any) {
+      return { data: null, error: e.message, isOnline: false };
+    }
+  }
+
+  public async getAdminModels(adminKey: string): Promise<ApiResponse<any>> {
+    const fullUrl = `${this.baseUrl}/api/v1/admin/models`;
+    try {
+      const response = await fetch(fullUrl, {
+        headers: { 'Accept': 'application/json', 'X-Admin-Key': adminKey },
+      });
+      const data = await response.json();
+      if (!response.ok) return { data: null, error: data.detail || 'Failed to fetch models', isOnline: true };
+      return { data, error: null, isOnline: true };
+    } catch (e: any) {
+      return { data: null, error: e.message, isOnline: false };
+    }
+  }
+
+  public async getAdminDiagnostics(adminKey: string): Promise<ApiResponse<any>> {
+    const fullUrl = `${this.baseUrl}/api/v1/admin/health/diagnostics`;
+    try {
+      const response = await fetch(fullUrl, {
+        headers: { 'Accept': 'application/json', 'X-Admin-Key': adminKey },
+      });
+      const data = await response.json();
+      if (!response.ok) return { data: null, error: data.detail || 'Failed to fetch diagnostics', isOnline: true };
+      return { data, error: null, isOnline: true };
+    } catch (e: any) {
+      return { data: null, error: e.message, isOnline: false };
+    }
+  }
+
+  public async getAdminAuditLogs(adminKey: string, limit: number = 50): Promise<ApiResponse<any>> {
+    const fullUrl = `${this.baseUrl}/api/v1/admin/audit-logs?limit=${limit}`;
+    try {
+      const response = await fetch(fullUrl, {
+        headers: { 'Accept': 'application/json', 'X-Admin-Key': adminKey },
+      });
+      const data = await response.json();
+      if (!response.ok) return { data: null, error: data.detail || 'Failed to fetch audit logs', isOnline: true };
+      return { data, error: null, isOnline: true };
+    } catch (e: any) {
+      return { data: null, error: e.message, isOnline: false };
+    }
+  }
+
+  public subscribeAdminStream(adminKey: string, onEvent: (data: any) => void): () => void {
+    const fullUrl = `${this.baseUrl}/api/v1/admin/stream?token=${encodeURIComponent(adminKey)}`;
+    let eventSource: EventSource | null = null;
+    try {
+      eventSource = new EventSource(fullUrl);
+      eventSource.addEventListener('soc_event', (event) => {
+        try {
+          const item = JSON.parse(event.data);
+          onEvent(item);
+        } catch (_) {}
+      });
+      eventSource.onmessage = (event) => {
+        try {
+          const item = JSON.parse(event.data);
+          onEvent(item);
+        } catch (_) {}
+      };
+    } catch (_) {}
+
+    return () => {
+      if (eventSource) {
+        eventSource.close();
+      }
+    };
+  }
+
   // ---------------------------------------------------------------------------
   // Phase A3: Security Notifications & Real-Time Alerts
   // ---------------------------------------------------------------------------
